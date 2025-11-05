@@ -4,19 +4,21 @@ import edu.kit.kastel.mcse.ardoco.metrics.cli.commands.AggregationClassification
 import edu.kit.kastel.mcse.ardoco.metrics.cli.commands.AggregationRankCommand
 import edu.kit.kastel.mcse.ardoco.metrics.cli.commands.ClassificationCommand
 import edu.kit.kastel.mcse.ardoco.metrics.cli.commands.RankCommand
-import kotlinx.cli.ArgParser
-import kotlinx.cli.ArgType
-import kotlinx.cli.ExperimentalCli
+import picocli.CommandLine
 
-@OptIn(ExperimentalCli::class)
 fun main(args: Array<String>) {
-    val parser = ArgParser("ArDoCo Metrics")
-
-    val outputFileOption = parser.option(ArgType.String, shortName = "o", description = "The output file", fullName = "output")
-    val classificationCommand = ClassificationCommand(outputFileOption)
-    val aggregationClassificationCommand = AggregationClassificationCommand(outputFileOption)
-    val rankCommand = RankCommand(outputFileOption)
-    val aggregationRankCommand = AggregationRankCommand(outputFileOption)
-    parser.subcommands(classificationCommand, aggregationClassificationCommand, rankCommand, aggregationRankCommand)
-    parser.parse(args)
+    val rootCommand = RootCommand()
+    CommandLine(rootCommand)
+        .addSubcommand("classification", ClassificationCommand())
+        .addSubcommand("aggCl", AggregationClassificationCommand())
+        .addSubcommand("rank", RankCommand())
+        .addSubcommand("aggRnk", AggregationRankCommand())
+        .execute(*args)
 }
+
+@CommandLine.Command(
+    name = "ArDoCo Metrics",
+    mixinStandardHelpOptions = true,
+    description = ["CLI for ArDoCo Metrics"]
+)
+class RootCommand

@@ -6,28 +6,27 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import edu.kit.kastel.mcse.ardoco.metrics.ClassificationMetricsCalculator
 import edu.kit.kastel.mcse.ardoco.metrics.result.SingleClassificationResult
-import kotlinx.cli.ArgType
-import kotlinx.cli.ExperimentalCli
-import kotlinx.cli.SingleNullableOption
-import kotlinx.cli.Subcommand
-import kotlinx.cli.required
-import java.io.File
+import picocli.CommandLine.Command
+import picocli.CommandLine.Option
+import java.util.concurrent.Callable
 
-@OptIn(ExperimentalCli::class)
-class AggregationClassificationCommand(
-    private val outputFileOption: SingleNullableOption<String>
-) : Subcommand("aggCl", "Aggregate results of multiple classifications. I.e., Macro Average + WeightedAverage + Micro Average") {
-    private val directoryWithResultsOption by option(
-        ArgType.String,
-        shortName = "d",
-        description = "The directory with the classification results"
-    ).required()
+@Command(
+    name = "aggCl",
+    description = ["Aggregate results of multiple classifications. I.e., Macro Average + WeightedAverage + Micro Average"],
+    mixinStandardHelpOptions = true
+)
+class AggregationClassificationCommand : Callable<Int> {
+    @Option(names = ["-d", "--directory"], description = ["The directory with the classification results"], required = true)
+    lateinit var directoryWithResults: String
 
-    override fun execute() {
-        val directory = File(directoryWithResultsOption)
+    @Option(names = ["-o", "--output"], description = ["The output file"])
+    var outputFile: String? = null
+
+    override fun call(): Int {
+        val directory = java.io.File(directoryWithResults)
         if (!directory.isDirectory) {
             println("The provided path is not a directory")
-            return
+            return 1
         }
         val oom = ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT).registerKotlinModule()
         val results: List<SingleClassificationResult<String>> =
@@ -38,16 +37,15 @@ class AggregationClassificationCommand(
             } ?: emptyList()
         if (results.isEmpty()) {
             println("No classification results found")
-            return
+            return 1
         }
         val classificationMetrics = ClassificationMetricsCalculator.Instance
         val average = classificationMetrics.calculateAverages(results)
         average.forEach { it.prettyPrint() }
-
-        val output = outputFileOption.value
-        if (output != null) {
-            val outputFile = File(output)
-            oom.writeValue(outputFile, average)
+        outputFile?.let {
+            val outputFileObj = java.io.File(it)
+            oom.writeValue(outputFileObj, average)
         }
+        return 0
     }
 }

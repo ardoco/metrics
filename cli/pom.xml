@@ -12,6 +12,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <project.source.encoding>UTF-8</project.source.encoding>
+    <picocli.version>4.7.7</picocli.version>
   </properties>
 
   <dependencies>
@@ -28,14 +29,14 @@
       <artifactId>jackson-module-kotlin</artifactId>
     </dependency>
     <dependency>
+      <groupId>info.picocli</groupId>
+      <artifactId>picocli</artifactId>
+      <version>${picocli.version}</version>
+    </dependency>
+    <dependency>
       <groupId>io.github.ardoco</groupId>
       <artifactId>metrics</artifactId>
       <version>${revision}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.jetbrains.kotlinx</groupId>
-      <artifactId>kotlinx-cli-jvm</artifactId>
-      <version>0.3.6</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -80,6 +81,28 @@
             </manifest>
           </archive>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.jetbrains.kotlin</groupId>
+        <artifactId>kotlin-maven-plugin</artifactId>
+        <version>${kotlin.version}</version>
+        <executions>
+          <execution>
+            <id>kapt</id>
+            <goals>
+              <goal>kapt</goal>
+            </goals>
+            <configuration combine.self="append">
+              <annotationProcessorPaths>
+                <annotationProcessorPath>
+                  <groupId>info.picocli</groupId>
+                  <artifactId>picocli-codegen</artifactId>
+                  <version>${picocli.version}</version>
+                </annotationProcessorPath>
+              </annotationProcessorPaths>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

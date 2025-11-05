@@ -4,89 +4,108 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import edu.kit.kastel.mcse.ardoco.metrics.RankMetricsCalculator
-import kotlinx.cli.ArgType
-import kotlinx.cli.ExperimentalCli
-import kotlinx.cli.SingleNullableOption
-import kotlinx.cli.Subcommand
-import kotlinx.cli.default
-import kotlinx.cli.required
-import java.io.File
+import picocli.CommandLine.Command
+import picocli.CommandLine.Option
+import java.util.concurrent.Callable
 
-@OptIn(ExperimentalCli::class)
-class RankCommand(private val outputFileOption: SingleNullableOption<String>) : Subcommand("rank", "Calculates rank metrics") {
-    private val rankedListDirectoryOption by option(
-        ArgType.String, shortName = "r", description = "The directory of the ranked list files", fullName = "ranked-list-directory"
-    ).required()
-    private val groundTruthFileOption by option(
-        ArgType.String, shortName = "g", description = "The ground truth file", fullName = "ground-truth"
-    ).required()
-    private val fileHeaderOption by option(ArgType.Boolean, description = "Whether the files have a header", fullName = "header").default(false)
-    private val rankedRelevanceListDirectoryOption by option(
-        ArgType.String,
-        shortName = "rrl",
-        description = "The directory of the ranked relevance list files",
-        fullName = "ranked-relevance-list-directory"
-    )
-    private val biggerIsMoreSimilar by option(
-        ArgType.String, shortName = "b", description = "Whether the relevance scores are more similar if bigger", fullName = "bigger-is-more-similar"
-    )
+@Command(name = "rank", description = ["Calculates rank metrics"], mixinStandardHelpOptions = true)
+class RankCommand : Callable<Int> {
+    @Option(names = ["-r", "--ranked-list-directory"], description = ["The directory of the ranked list files"], required = true)
+    lateinit var rankedListDirectory: String
 
+    @Option(names = ["-g", "--ground-truth"], description = ["The ground truth file"], required = true)
+    lateinit var groundTruthFile: String
 
-    override fun execute() {
+    @Option(names = ["--header"], description = ["Whether the files have a header"])
+    var fileHeader: Boolean = false
+
+    @Option(names = ["--ranked-relevance-list-directory", "-rrl"], description = ["The directory of the ranked relevance list files"])
+    var rankedRelevanceListDirectory: String? = null
+
+    @Option(names = ["-b", "--bigger-is-more-similar"], description = ["Whether the relevance scores are more similar if bigger"])
+    var biggerIsMoreSimilar: Boolean? = null
+
+    @Option(names = ["-o", "--output"], description = ["The output file"])
+    var outputFile: String? = null
+
+    override fun call(): Int {
         println("Calculating rank metrics")
-        val rankedListDirectory = File(rankedListDirectoryOption)
-        val groundTruthFile = File(groundTruthFileOption)
-
-        if (!rankedListDirectory.exists() || !groundTruthFile.exists()) {
+        val rankedListDirectoryFile = java.io.File(rankedListDirectory)
+        val groundTruthFileObj = java.io.File(groundTruthFile)
+        if (!rankedListDirectoryFile.exists() || !groundTruthFileObj.exists()) {
             println("The directory of the ranked list files or ground truth file does not exist")
-            return
+            return 1
         }
-        if (!rankedListDirectory.isDirectory) {
+        if (!rankedListDirectoryFile.isDirectory) {
             println("The provided path is not a directory")
-            return
+            return 1
         }
-        val rankedResults: List<List<String>> = rankedListDirectory.listFiles()?.filter { file ->
-            file.isFile
-        }?.map { file -> file.readLines().filter { it.isNotBlank() }.drop(if (fileHeaderOption) 1 else 0) } ?: emptyList()
+        val rankedResults: List<List<String>> =
+            rankedListDirectoryFile
+                .listFiles()
+                ?.filter { file ->
+                    file.isFile
+                }?.map { file -> file.readLines().filter { it.isNotBlank() }.drop(if (fileHeader) 1 else 0) } ?: emptyList()
         if (rankedResults.isEmpty()) {
             println("No classification results found")
-            return
+            return 1
         }
-        val groundTruth = groundTruthFile.readLines().filter { it.isNotBlank() }.drop(if (fileHeaderOption) 1 else 0).toSet()
-
+        val groundTruth =
+            groundTruthFileObj
+                .readLines()
+                .filter { it.isNotBlank() }
+                .drop(if (fileHeader) 1 else 0)
+                .toSet()
         var relevanceBasedInput: RankMetricsCalculator.RelevanceBasedInput<Double>? = null
-        if (rankedRelevanceListDirectoryOption != null) {
-            val rankedRelevanceListDirectory = File(rankedRelevanceListDirectoryOption!!)
-            if (!rankedRelevanceListDirectory.exists() || !rankedRelevanceListDirectory.isDirectory) {
+        if (rankedRelevanceListDirectory != null) {
+            val rankedRelevanceListDirectoryFile = java.io.File(rankedRelevanceListDirectory!!)
+            if (!rankedRelevanceListDirectoryFile.exists() || !rankedRelevanceListDirectoryFile.isDirectory) {
                 println("The directory of the ranked relevance list files does not exist or is not a directory")
-                return
+                return 1
             }
-            val rankedRelevances = rankedRelevanceListDirectory.listFiles()?.filter { file ->
-                file.isFile
-            }?.map { file -> file.readLines().filter { it.isNotBlank() }.map { it.toDouble() }.drop(if (fileHeaderOption) 1 else 0) } ?: emptyList()
+            val rankedRelevances =
+                rankedRelevanceListDirectoryFile
+                    .listFiles()
+                    ?.filter { file ->
+                        file.isFile
+                    }?.map { file ->
+                        file
+                            .readLines()
+                            .filter { it.isNotBlank() }
+                            .map { it.toDouble() }
+                            .drop(if (fileHeader) 1 else 0)
+                    } ?: emptyList()
             if (rankedRelevances.isEmpty()) {
                 println("No relevance scores found")
-                return
+                return 1
             }
             if (biggerIsMoreSimilar == null) {
-                throw IllegalArgumentException("ranked relevances and bigger is more similar can only occur together")
+                throw IllegalArgumentException("Both 'ranked-relevance-list-directory' and 'bigger-is-more-similar' must be specified together.")
             }
-            relevanceBasedInput = if (biggerIsMoreSimilar != null) RankMetricsCalculator.RelevanceBasedInput(
-                rankedRelevances, { it }, biggerIsMoreSimilar.toBoolean()
-            ) else null
+            relevanceBasedInput =
+                RankMetricsCalculator.RelevanceBasedInput(
+                    rankedRelevances,
+                    { it },
+                    biggerIsMoreSimilar!!
+                )
         }
         val rankMetrics = RankMetricsCalculator.Instance
-
-        val result = rankMetrics.calculateMetrics(
-            rankedResults, groundTruth, relevanceBasedInput
-        )
+        val result =
+            rankMetrics.calculateMetrics(
+                rankedResults,
+                groundTruth,
+                relevanceBasedInput
+            )
         result.prettyPrint()
-
-        val output = outputFileOption.value
-        if (output != null) {
-            val outputFile = File(output)
-            val oom = ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT).registerKotlinModule()
-            oom.writeValue(outputFile, result)
+        outputFile?.let {
+            val outputFileObj = java.io.File(it)
+            val oom =
+                ObjectMapper()
+                    .enable(
+                        SerializationFeature.INDENT_OUTPUT
+                    ).registerKotlinModule()
+            oom.writeValue(outputFileObj, result)
         }
+        return 0
     }
 }
