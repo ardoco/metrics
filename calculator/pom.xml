@@ -7,7 +7,8 @@
     <version>${revision}</version>
   </parent>
   <artifactId>metrics</artifactId>
-  <name>ArDoCo Metrics (Calculation)</name>
+  <name>ARDoCo Metrics (Calculation)</name>
+  <description>Implementation of evaluation metrics for TLR.</description>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
