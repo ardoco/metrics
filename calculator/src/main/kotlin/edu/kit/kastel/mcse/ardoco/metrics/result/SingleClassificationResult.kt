@@ -32,4 +32,16 @@ data class SingleClassificationResult<T>(
         logger.info("True Negatives: ${trueNegatives ?: "N/A"}")
         super.prettyPrint()
     }
+
+    /** Calculates the F-beta score of the classification. */
+    fun fBeta(beta: Double): Double {
+        if (beta == 0.0) {
+            error("Beta cannot be zero for F-beta score.")
+        }
+
+        if (beta == 1.0) return f1
+
+        val betaSquared = beta * beta
+        return (1 + betaSquared) * (precision * recall) / ((betaSquared * precision) + recall)
+    }
 }
