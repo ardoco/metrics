@@ -35,8 +35,8 @@ data class SingleClassificationResult<T>(
 
     /** Calculates the F-beta score of the classification. */
     fun fBeta(beta: Double): Double {
-        if (beta == 0.0) {
-            error("Beta cannot be zero for F-beta score.")
+        if (beta <= 0.0) {
+            error("Beta must be greater than 0 for F-beta score.")
         }
 
         if (beta == 1.0) return f1
