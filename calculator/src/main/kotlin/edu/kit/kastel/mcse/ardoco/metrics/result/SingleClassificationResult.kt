@@ -42,6 +42,7 @@ data class SingleClassificationResult<T>(
         if (beta == 1.0) return f1
 
         val betaSquared = beta * beta
-        return (1 + betaSquared) * (precision * recall) / ((betaSquared * precision) + recall)
+        val result = (1 + betaSquared) * (precision * recall) / ((betaSquared * precision) + recall)
+        return if (result.isNaN()) 0.0 else result
     }
 }
