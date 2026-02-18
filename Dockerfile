@@ -5,7 +5,7 @@ COPY . .
 RUN mvn clean package
 RUN rm /metrics/rest/target/*-javadoc.jar && rm /metrics/rest/target/*-sources.jar
 
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:25-jre
 
 ENV TZ=Europe/Berlin
 
