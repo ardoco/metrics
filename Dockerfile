@@ -1,11 +1,11 @@
-FROM maven:3-eclipse-temurin-21 AS builder
+FROM maven:3-eclipse-temurin-25 AS builder
 
 WORKDIR /metrics
 COPY . .
 RUN mvn clean package
 RUN rm /metrics/rest/target/*-javadoc.jar && rm /metrics/rest/target/*-sources.jar
 
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:25-jre
 
 ENV TZ=Europe/Berlin
 
