@@ -34,9 +34,14 @@ internal class RankMetricsCalculatorImpl : RankMetricsCalculator {
         return listOf(macroAverage, weightedAverage)
     }
 
-    private fun calculateMacroAverage(singleRankMetricsResults: List<SingleRankMetricsResult>): AggregatedRankMetricsResult {
-        return calculateWeightedAverage(singleRankMetricsResults, singleRankMetricsResults.map { 1 }, AggregationType.MACRO_AVERAGE)
-    }
+    private fun calculateMacroAverage(singleRankMetricsResults: List<SingleRankMetricsResult>): AggregatedRankMetricsResult =
+        calculateWeightedAverage(
+            singleRankMetricsResults,
+            singleRankMetricsResults.map {
+                1
+            },
+            AggregationType.MACRO_AVERAGE
+        )
 
     private fun calculateWeightedAverage(
         singleRankMetricsResults: List<SingleRankMetricsResult>,
@@ -60,6 +65,7 @@ internal class RankMetricsCalculatorImpl : RankMetricsCalculator {
 
         map /= sumOfWeights
         lag /= sumOfWeights
+        auc /= sumOfWeights
 
         return if (singleRankMetricsResults.all { it.auc == null }) {
             AggregatedRankMetricsResult(type, map, lag, null, singleRankMetricsResults, weights)
