@@ -147,23 +147,12 @@ fun calculateROC(
     val rocPoints: MutableList<DoubleArray> = ArrayList()
     rocPoints.add(doubleArrayOf(0.0, 0.0)) // Start at (0, 0)
 
-    var index = 0
-    while (index < relevanceIsTPList.size) {
-        val currentRelevance = relevanceIsTPList[index].first
-        var tpInGroup = 0
-        var fpInGroup = 0
-
-        while (index < relevanceIsTPList.size && relevanceIsTPList[index].first == currentRelevance) {
-            if (relevanceIsTPList[index].second) {
-                tpInGroup++
-            } else {
-                fpInGroup++
-            }
-            index++
+    for (pair in relevanceIsTPList) {
+        if (pair.second) {
+            truePositives++
+        } else {
+            falsePositives++
         }
-
-        truePositives += tpInGroup
-        falsePositives += fpInGroup
 
         val tpr = truePositives.toDouble() / totalPositives
         val fpr = falsePositives.toDouble() / totalNegatives
