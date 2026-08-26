@@ -20,4 +20,14 @@ class Handler {
         }
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex?.message)
     }
+
+    /**
+     * Invalid input, e.g. a beta that is not greater than 0 or a number of weights that does not match the number of requests, is a client error.
+     */
+    @ExceptionHandler(IllegalArgumentException::class)
+    fun handleIllegalArgument(
+        ex: IllegalArgumentException,
+        request: HttpServletRequest?,
+        response: HttpServletResponse?
+    ): ResponseEntity<Any> = ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.message)
 }

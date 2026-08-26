@@ -23,11 +23,18 @@ class ClassificationMetricsController {
         @RequestBody body: ClassificationMetricsRequest
     ): SingleClassificationResult<String> {
         val classificationMetricsCalculator = ClassificationMetricsCalculator.Instance
-        val result = classificationMetricsCalculator.calculateMetrics(body.classification.toSet(), body.groundTruth.toSet(), body.confusionMatrixSum)
-        return result
+        return classificationMetricsCalculator.calculateMetrics(
+            body.classification.toSet(),
+            body.groundTruth.toSet(),
+            body.confusionMatrixSum,
+            body.betas ?: emptyList()
+        )
     }
 
-    @Operation(summary = "Calculate classification metrics for multiple projects. Calculate the average and optionally a weighted average.")
+    @Operation(
+        summary = "Calculate classification metrics for multiple projects. Calculate the macro, the weighted and the micro average.",
+        description = "The betas of the F-beta scores apply to all projects and therefore have to be specified on the request level."
+    )
     @PostMapping("/average")
     fun calculateMultipleClassificationMetrics(
         @RequestBody body: AverageClassificationMetricsRequest
@@ -35,22 +42,27 @@ class ClassificationMetricsController {
         val classificationMetricsCalculator = ClassificationMetricsCalculator.Instance
 
         val requests = body.classificationMetricsRequests
+        require(requests.all { it.betas == null }) { "betas must be specified on the request level, not per classification metrics request" }
+
+        val betas = body.betas ?: emptyList()
         val results =
             requests.map {
-                classificationMetricsCalculator.calculateMetrics(it.classification.toSet(), it.groundTruth.toSet(), it.confusionMatrixSum)
+                classificationMetricsCalculator.calculateMetrics(it.classification.toSet(), it.groundTruth.toSet(), it.confusionMatrixSum, betas)
             }
 
-        return classificationMetricsCalculator.calculateAverages(results, body.weights)
+        return classificationMetricsCalculator.calculateAverages(results, body.weights, body.betas)
     }
 
     data class AverageClassificationMetricsRequest(
         val classificationMetricsRequests: List<ClassificationMetricsRequest>,
-        val weights: List<Int>? = null
+        val weights: List<Int>? = null,
+        val betas: List<Double>? = null
     )
 
     data class ClassificationMetricsRequest(
         val classification: List<String>,
         val groundTruth: List<String>,
-        val confusionMatrixSum: Int? = null
+        val confusionMatrixSum: Int? = null,
+        val betas: List<Double>? = null
     )
 }
