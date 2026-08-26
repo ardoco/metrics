@@ -15,6 +15,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping
 
@@ -198,6 +199,21 @@ class ClassificationMetricsControllerTest {
             }
             """.trimIndent()
         ).andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun homeRedirectsToSwaggerTest() {
+        mockMvc
+            .perform(get("/"))
+            .andExpect(status().is3xxRedirection)
+            .andExpect(redirectedUrl("/swagger-ui/index.html"))
+    }
+
+    @Test
+    fun unknownPathIsReportedAsServerErrorTest() {
+        // Pins existing behaviour: Handler maps everything except IllegalArgumentException and NullPointerException to 500, so an unknown path is
+        // answered with 500 rather than 404.
+        mockMvc.perform(get("/does-not-exist")).andExpect(status().isInternalServerError)
     }
 
     @Test
