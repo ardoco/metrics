@@ -146,7 +146,7 @@ class ClassificationAggregationTest {
             Executable { assertEquals(expected, aggregation.macroAverage.confusionMatrix) },
             Executable { assertEquals(expected, aggregation.weightedAverage.confusionMatrix) },
             Executable { assertEquals(expected, aggregation.microAverage.confusionMatrix) },
-            Executable { assertEquals(42, aggregation.confusionMatrix.total) }
+            Executable { assertEquals(42, aggregation.confusionMatrix.total()) }
         )
     }
 

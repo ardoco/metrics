@@ -24,16 +24,18 @@ data class SingleClassificationResult<T>(
     override val specificity: Double?,
     override val phiCoefficient: Double?,
     override val phiCoefficientMax: Double?,
-    override val phiOverPhiMax: Double?
+    override val phiOverPhiMax: Double?,
+    /** The confusion matrix of this result. Defaults to the counts of the classified elements and has to agree with them. */
+    override val confusionMatrix: ConfusionMatrix =
+        ConfusionMatrix(truePositives.size, falsePositives.size, falseNegatives.size, trueNegatives)
 ) : ClassificationResult {
     init {
         require(trueNegatives == null || trueNegatives >= 0) { "The number of true negatives must not be negative but was $trueNegatives" }
         require(fbetaScores.containsKey(1.0)) { "The F-beta scores must contain the F1-score (beta 1.0)" }
+        require(confusionMatrix == ConfusionMatrix(truePositives.size, falsePositives.size, falseNegatives.size, trueNegatives)) {
+            "The confusion matrix $confusionMatrix does not match the classified elements"
+        }
     }
-
-    /** The confusion matrix of this result, derived from the classified elements. */
-    override val confusionMatrix: ConfusionMatrix
-        get() = ConfusionMatrix(truePositives.size, falsePositives.size, falseNegatives.size, trueNegatives)
 
     /**
      * Returns the F-beta score for [beta]. If it was not calculated for this result, it is recomputed from [precision] and [recall], which yields the

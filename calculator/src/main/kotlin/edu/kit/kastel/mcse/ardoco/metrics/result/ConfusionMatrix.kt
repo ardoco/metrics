@@ -25,9 +25,14 @@ data class ConfusionMatrix(
         require(trueNegatives == null || trueNegatives >= 0) { "The number of true negatives must not be negative but was $trueNegatives" }
     }
 
-    /** The total number of classified elements. Null iff [trueNegatives] is null. */
-    val total: Int?
-        get() = trueNegatives?.let { truePositives + falsePositives + falseNegatives + it }
+    /**
+     * Returns the total number of classified elements, or null if [trueNegatives] is unknown.
+     *
+     * This is intentionally a function and not a property so that the four counts stay the only serialized state of this type.
+     *
+     * @return the total number of classified elements, or null if it is unknown
+     */
+    fun total(): Int? = trueNegatives?.let { truePositives + falsePositives + falseNegatives + it }
 
     /**
      * Sums the counts of this matrix and [other]. The result has no number of true negatives if either operand has none.

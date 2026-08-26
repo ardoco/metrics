@@ -11,9 +11,9 @@ class ConfusionMatrixTest {
     @Test
     fun totalTest() {
         assertAll(
-            Executable { assertEquals(21, ConfusionMatrix(6, 1, 2, 12).total) },
-            Executable { assertEquals(0, ConfusionMatrix(0, 0, 0, 0).total) },
-            Executable { assertNull(ConfusionMatrix(6, 1, 2, null).total) }
+            Executable { assertEquals(21, ConfusionMatrix(6, 1, 2, 12).total()) },
+            Executable { assertEquals(0, ConfusionMatrix(0, 0, 0, 0).total()) },
+            Executable { assertNull(ConfusionMatrix(6, 1, 2, null).total()) }
         )
     }
 

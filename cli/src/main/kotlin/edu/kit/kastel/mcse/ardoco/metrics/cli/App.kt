@@ -5,12 +5,14 @@ import edu.kit.kastel.mcse.ardoco.metrics.cli.commands.ClassificationCommand
 import picocli.CommandLine
 
 fun main(args: Array<String>) {
-    val rootCommand = RootCommand()
-    CommandLine(rootCommand)
+    createCommandLine().execute(*args)
+}
+
+/** Creates the command line with all supported subcommands. */
+internal fun createCommandLine(): CommandLine =
+    CommandLine(RootCommand())
         .addSubcommand("classification", ClassificationCommand())
         .addSubcommand("aggCl", AggregationClassificationCommand())
-        .execute(*args)
-}
 
 @CommandLine.Command(
     name = "ArDoCo Metrics",

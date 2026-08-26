@@ -1,10 +1,8 @@
 package edu.kit.kastel.mcse.ardoco.metrics.cli.commands
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import edu.kit.kastel.mcse.ardoco.metrics.ClassificationMetricsCalculator
+import edu.kit.kastel.mcse.ardoco.metrics.cli.createObjectMapper
 import edu.kit.kastel.mcse.ardoco.metrics.result.SingleClassificationResult
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
@@ -12,7 +10,10 @@ import java.util.concurrent.Callable
 
 @Command(
     name = "aggCl",
-    description = ["Aggregate results of multiple classifications. I.e., Macro Average + WeightedAverage + Micro Average"],
+    description = [
+        "Aggregate results of multiple classifications. I.e., Macro Average + WeightedAverage + Micro Average. " +
+            "The F-beta scores to aggregate are taken from the result files."
+    ],
     mixinStandardHelpOptions = true
 )
 class AggregationClassificationCommand : Callable<Int> {
@@ -28,7 +29,7 @@ class AggregationClassificationCommand : Callable<Int> {
             println("The provided path is not a directory")
             return 1
         }
-        val oom = ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT).registerKotlinModule()
+        val oom = createObjectMapper()
         val results: List<SingleClassificationResult<String>> =
             directory.listFiles()?.filter { it.isFile }?.map {
                 oom.readValue(
@@ -41,6 +42,7 @@ class AggregationClassificationCommand : Callable<Int> {
         }
         val classificationMetrics = ClassificationMetricsCalculator.Instance
         val aggregation = classificationMetrics.calculateAverages(results)
+        println("Aggregated F-beta scores for betas: ${aggregation.betas.joinToString(", ")}")
         aggregation.prettyPrint()
         outputFile?.let {
             val outputFileObj = java.io.File(it)

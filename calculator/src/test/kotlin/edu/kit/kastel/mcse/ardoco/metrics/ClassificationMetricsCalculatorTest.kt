@@ -28,7 +28,7 @@ class ClassificationMetricsCalculatorTest {
             Executable { assertEquals(setOf("d", "e"), result.falseNegatives) },
             Executable { assertEquals(5, result.trueNegatives) },
             Executable { assertEquals(ConfusionMatrix(2, 1, 2, 5), result.confusionMatrix) },
-            Executable { assertEquals(10, result.confusionMatrix.total) }
+            Executable { assertEquals(10, result.confusionMatrix.total()) }
         )
     }
 
@@ -53,7 +53,7 @@ class ClassificationMetricsCalculatorTest {
         assertAll(
             Executable { assertNull(result.trueNegatives) },
             Executable { assertNull(result.confusionMatrix.trueNegatives) },
-            Executable { assertNull(result.confusionMatrix.total) },
+            Executable { assertNull(result.confusionMatrix.total()) },
             Executable { assertNull(result.accuracy) },
             Executable { assertNull(result.specificity) },
             Executable { assertNull(result.phiCoefficient) },

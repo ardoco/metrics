@@ -1,8 +1,7 @@
 package edu.kit.kastel.mcse.ardoco.metrics.cli.commands
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import edu.kit.kastel.mcse.ardoco.metrics.ClassificationMetricsCalculator
+import edu.kit.kastel.mcse.ardoco.metrics.cli.createObjectMapper
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.util.concurrent.Callable
@@ -20,6 +19,14 @@ class ClassificationCommand : Callable<Int> {
 
     @Option(names = ["-s", "--sum"], description = ["The sum of the confusion matrix"])
     var confusionMatrixSum: Int = -1
+
+    @Option(
+        names = ["-b", "--beta"],
+        description = ["Betas of additional F-beta scores; repeatable or comma-separated. The F1-score is always calculated."],
+        split = ",",
+        paramLabel = "<beta>"
+    )
+    var betas: MutableList<Double> = mutableListOf()
 
     @Option(names = ["-o", "--output"], description = ["The output file"])
     var outputFile: String? = null
@@ -44,18 +51,18 @@ class ClassificationCommand : Callable<Int> {
                 .filter { it.isNotBlank() }
                 .drop(if (fileHeader) 1 else 0)
                 .toSet()
-        val classificationMetrics = edu.kit.kastel.mcse.ardoco.metrics.ClassificationMetricsCalculator.Instance
+        val classificationMetrics = ClassificationMetricsCalculator.Instance
         val result =
             classificationMetrics.calculateMetrics(
                 classification,
                 groundTruth,
-                if (confusionMatrixSum < 0) null else confusionMatrixSum
+                if (confusionMatrixSum < 0) null else confusionMatrixSum,
+                betas
             )
         result.prettyPrint()
         outputFile?.let {
             val outputFileObj = java.io.File(it)
-            val oom = ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT).registerKotlinModule()
-            oom.writeValue(outputFileObj, result)
+            createObjectMapper().writeValue(outputFileObj, result)
         }
         return 0
     }
