@@ -14,9 +14,7 @@ import java.math.MathContext
 fun calculatePrecision(
     truePositives: Int,
     falsePositives: Int
-): Double {
-    return if (truePositives + falsePositives == 0) 1.0 else truePositives.toDouble() / (truePositives + falsePositives)
-}
+): Double = if (truePositives + falsePositives == 0) 1.0 else truePositives.toDouble() / (truePositives + falsePositives)
 
 /**
  * Calculates the recall for the given True Positives (TPs) and False Negatives (FNs). If TP+NP=0, then returns 1.0 because there was no missing element.
@@ -28,9 +26,7 @@ fun calculatePrecision(
 fun calculateRecall(
     truePositives: Int,
     falseNegatives: Int
-): Double {
-    return if (truePositives + falseNegatives == 0) 1.0 else truePositives.toDouble() / (truePositives + falseNegatives)
-}
+): Double = if (truePositives + falseNegatives == 0) 1.0 else truePositives.toDouble() / (truePositives + falseNegatives)
 
 /**
  * Calculates the F1-score using the provided precision and recall. If precision+recall=0, returns 0.0.
@@ -42,9 +38,28 @@ fun calculateRecall(
 fun calculateF1(
     precision: Double,
     recall: Double
+): Double = calculateFBeta(precision, recall, 1.0)
+
+/**
+ * Calculates the F-beta score using the provided precision and recall. Beta is the weight of the recall relative to the precision: beta &lt; 1 weighs
+ * precision higher, beta &gt; 1 weighs recall higher, and beta = 1 yields the F1-score. If the denominator is 0, returns 0.0.
+ *
+ * @param precision the precision
+ * @param recall    the recall
+ * @param beta      the weight of the recall relative to the precision; must be finite and greater than 0
+ * @return the F-beta score; 0.0 iff beta&#178;*precision+recall=0
+ * @throws IllegalArgumentException if [beta] is not a finite number greater than 0
+ * @see [Wikipedia: F-score](https://en.wikipedia.org/wiki/F-score)
+ */
+fun calculateFBeta(
+    precision: Double,
+    recall: Double,
+    beta: Double
 ): Double {
-    val f1 = 2 * (precision * recall) / (precision + recall)
-    return if (f1.isNaN()) 0.0 else f1
+    require(beta > 0.0 && beta.isFinite()) { "Beta must be a finite number greater than 0 but was $beta" }
+    val betaSquared = beta * beta
+    val fBeta = (1 + betaSquared) * (precision * recall) / ((betaSquared * precision) + recall)
+    return if (fBeta.isNaN()) 0.0 else fBeta
 }
 
 /**
