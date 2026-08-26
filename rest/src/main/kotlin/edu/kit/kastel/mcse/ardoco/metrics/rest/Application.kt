@@ -11,7 +11,7 @@ import org.springframework.boot.runApplication
     info =
         Info(
             title = "ArDoCo: Metrics",
-            description = "This tool provides functionality to calculate and aggregate classification and rank metrics for various tasks.",
+            description = "This tool provides functionality to calculate and aggregate classification metrics for various tasks.",
             license = License(name = "MIT License", url = "https://github.com/ArDoCo/Metrics/blob/main/LICENSE.md")
         ),
     externalDocs = ExternalDocumentation(description = "ArDoCo: Metrics - Wiki", url = "https://github.com/ArDoCo/metrics/wiki")
