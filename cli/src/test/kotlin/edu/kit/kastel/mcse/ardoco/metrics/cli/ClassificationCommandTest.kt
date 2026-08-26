@@ -114,6 +114,50 @@ class ClassificationCommandTest {
     }
 
     @Test
+    fun commandsWithoutOutputFileTest(
+        @TempDir dir: Path
+    ) {
+        val classification = dir.resolve("classification.txt").also { it.writeText("a\nb\nc\n") }
+        val groundTruth = dir.resolve("groundTruth.txt").also { it.writeText("a\nb\nd\ne\n") }
+        val resultsDir = dir.resolve("results").also { it.createDirectory() }
+        resultsDir.resolve("first.json").writeText(
+            mapper.writeValueAsString(calculator.calculateMetrics(setOf("a", "b"), setOf("a", "c"), 8))
+        )
+
+        val classificationExit =
+            CommandLine(ClassificationCommand()).execute("-c", classification.toString(), "-g", groundTruth.toString(), "-s", "10")
+        val aggregationExit = CommandLine(AggregationClassificationCommand()).execute("-d", resultsDir.toString())
+
+        assertAll(
+            Executable { assertEquals(0, classificationExit) },
+            Executable { assertEquals(0, aggregationExit) },
+            // Nothing is written when -o is omitted.
+            Executable { assertEquals(1, resultsDir.toFile().listFiles()!!.size) }
+        )
+    }
+
+    @Test
+    fun classificationCommandWithBlankLinesTest(
+        @TempDir dir: Path
+    ) {
+        val classification = dir.resolve("classification.txt").also { it.writeText("a\n\n  \nb\n") }
+        val groundTruth = dir.resolve("groundTruth.txt").also { it.writeText("\na\n\nc\n") }
+        val output = dir.resolve("result.json")
+
+        val exitCode =
+            CommandLine(ClassificationCommand())
+                .execute("-c", classification.toString(), "-g", groundTruth.toString(), "-o", output.toString())
+
+        val written: SingleClassificationResult<String> = mapper.readValue(output.toFile())
+        assertAll(
+            Executable { assertEquals(0, exitCode) },
+            Executable { assertEquals(setOf("a"), written.truePositives) },
+            Executable { assertEquals(setOf("b"), written.falsePositives) },
+            Executable { assertEquals(setOf("c"), written.falseNegatives) }
+        )
+    }
+
+    @Test
     fun classificationCommandWithMissingFileTest(
         @TempDir dir: Path
     ) {
