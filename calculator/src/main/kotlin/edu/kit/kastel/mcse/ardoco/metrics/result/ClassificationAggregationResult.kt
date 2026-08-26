@@ -33,7 +33,7 @@ data class ClassificationAggregationResult<T>(
         require(microAverage.type == AggregationType.MICRO_AVERAGE) { "microAverage must be of type ${AggregationType.MICRO_AVERAGE}" }
     }
 
-    /** The confusion matrix pooled over all [singleResults]. */
+    /** The confusion matrix pooled over all [singleResults]. It is the basis of [microAverage] only; see [AggregatedClassificationResult]. */
     val confusionMatrix: ConfusionMatrix
         get() = microAverage.confusionMatrix
 

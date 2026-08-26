@@ -1,6 +1,13 @@
 package edu.kit.kastel.mcse.ardoco.metrics
 
+import edu.kit.kastel.mcse.ardoco.metrics.calculation.calculateAccuracy
 import edu.kit.kastel.mcse.ardoco.metrics.calculation.calculateFBeta
+import edu.kit.kastel.mcse.ardoco.metrics.calculation.calculatePhiCoefficient
+import edu.kit.kastel.mcse.ardoco.metrics.calculation.calculatePhiCoefficientMax
+import edu.kit.kastel.mcse.ardoco.metrics.calculation.calculatePhiOverPhiMax
+import edu.kit.kastel.mcse.ardoco.metrics.calculation.calculatePrecision
+import edu.kit.kastel.mcse.ardoco.metrics.calculation.calculateRecall
+import edu.kit.kastel.mcse.ardoco.metrics.calculation.calculateSpecificity
 import edu.kit.kastel.mcse.ardoco.metrics.result.AggregationType
 import edu.kit.kastel.mcse.ardoco.metrics.result.ClassificationAggregationResult
 import edu.kit.kastel.mcse.ardoco.metrics.result.ClassificationMetric
@@ -147,6 +154,59 @@ class ClassificationAggregationTest {
             { assertEquals(expected, aggregation.weightedAverage.confusionMatrix) },
             { assertEquals(expected, aggregation.microAverage.confusionMatrix) },
             { assertEquals(42, aggregation.confusionMatrix.total()) }
+        )
+    }
+
+    @Test
+    fun onlyTheMicroAverageFollowsFromThePooledConfusionMatrixTest() {
+        // The contract of ClassificationResult.confusionMatrix: all three aggregations carry the same pooled matrix, but only the micro average is
+        // calculated from it. For the macro and the weighted average it describes the underlying data, not the origin of the values next to it.
+        val aggregation = aggregate()
+        val pooled = aggregation.confusionMatrix
+        val tp = pooled.truePositives
+        val fp = pooled.falsePositives
+        val fn = pooled.falseNegatives
+        val tn = pooled.trueNegatives!!
+        val precisionOfPooled = calculatePrecision(tp, fp)
+        val recallOfPooled = calculateRecall(tp, fn)
+        val micro = aggregation.microAverage
+
+        assertAll(
+            { assertEquals(precisionOfPooled, micro.precision, 1e-12) },
+            { assertEquals(recallOfPooled, micro.recall, 1e-12) },
+            { assertEquals(calculateAccuracy(tp, fp, fn, tn), micro.accuracy!!, 1e-12) },
+            { assertEquals(calculateSpecificity(tn, fp), micro.specificity!!, 1e-12) },
+            { assertEquals(calculatePhiCoefficient(tp, fp, fn, tn), micro.phiCoefficient!!, 1e-12) },
+            { assertEquals(calculatePhiCoefficientMax(tp, fp, fn, tn), micro.phiCoefficientMax!!, 1e-12) },
+            { assertEquals(calculatePhiOverPhiMax(tp, fp, fn, tn), micro.phiOverPhiMax!!, 1e-12) },
+            // Including every F-beta score, which is what distinguishes the micro average from the other two.
+            {
+                assertAll(
+                    aggregation.betas.map { beta ->
+                        Executable {
+                            assertEquals(calculateFBeta(precisionOfPooled, recallOfPooled, beta), micro.fbetaScores.getValue(beta), 1e-12)
+                        }
+                    }
+                )
+            },
+            // The other two carry the same matrix, yet their values are means over the single results and do not follow from those counts.
+            { assertNotEquals(precisionOfPooled, aggregation.macroAverage.precision) },
+            { assertNotEquals(precisionOfPooled, aggregation.weightedAverage.precision) },
+            { assertNotEquals(recallOfPooled, aggregation.macroAverage.recall) },
+            // Recall is the one exception, and it is an identity rather than a coincidence: with the default weights w_i = tp_i + fn_i, the weighted
+            // recall telescopes to sum(tp_i) / sum(tp_i + fn_i), which is exactly the recall of the pooled matrix.
+            { assertEquals(recallOfPooled, aggregation.weightedAverage.recall, 1e-12) }
+        )
+    }
+
+    @Test
+    fun weightedRecallEqualsMicroRecallForDefaultWeightsTest() {
+        // Holds for the default weights only; an explicit weighting breaks the telescoping.
+        val defaultWeights = aggregate()
+        val explicitWeights = aggregate(weights = listOf(1, 1, 1))
+        assertAll(
+            { assertEquals(defaultWeights.microAverage.recall, defaultWeights.weightedAverage.recall, 1e-12) },
+            { assertNotEquals(explicitWeights.microAverage.recall, explicitWeights.weightedAverage.recall) }
         )
     }
 

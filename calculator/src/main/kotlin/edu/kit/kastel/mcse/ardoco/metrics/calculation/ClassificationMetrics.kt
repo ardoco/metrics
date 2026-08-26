@@ -71,9 +71,10 @@ fun calculateFBeta(
 }
 
 /**
- * Calculates the accuracy based on the true positives, false positives, false negatives, and true negatives.
+ * Calculates the accuracy based on the true positives, false positives, false negatives, and true negatives. If all four counts are 0, then returns
+ * 1.0 because nothing was classified wrongly, which matches the sentinel of [calculatePrecision], [calculateRecall] and [calculateSpecificity].
  *
- * @return the accuracy
+ * @return the accuracy; 1.0 iff TP+FP+FN+TN=0
  * @see [Wikipedia: Accuracy and Precision](https://en.wikipedia.org/wiki/Accuracy_and_precision)
  */
 fun calculateAccuracy(
@@ -84,6 +85,9 @@ fun calculateAccuracy(
 ): Double {
     val numerator = (truePositives + trueNegatives).toDouble()
     val denominator = (truePositives + falsePositives + falseNegatives + trueNegatives).toDouble()
+    // Without this guard an empty confusion matrix yields NaN, which is the only way a metric of this library can become non-finite. Jackson then
+    // writes it as the JSON string "NaN", breaking the `number` type that the REST schema declares for accuracy.
+    if (denominator == 0.0) return 1.0
     return numerator / denominator
 }
 

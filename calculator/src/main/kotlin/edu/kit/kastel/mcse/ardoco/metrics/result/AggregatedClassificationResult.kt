@@ -11,7 +11,10 @@ import edu.kit.kastel.mcse.ardoco.metrics.result.ClassificationResult.Companion.
 data class AggregatedClassificationResult(
     /** The type of aggregation */
     val type: AggregationType,
-    /** The confusion matrix pooled over all aggregated results */
+    /**
+     * The confusion matrix pooled over all aggregated results. All three aggregation types carry the same one, but only [AggregationType.MICRO_AVERAGE]
+     * is calculated from it; for the macro and the weighted average the metrics generally differ from what these counts would give.
+     */
     override val confusionMatrix: ConfusionMatrix,
     override val precision: Double,
     override val recall: Double,

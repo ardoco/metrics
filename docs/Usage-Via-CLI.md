@@ -10,6 +10,8 @@ java -jar metrics-cli.jar <command> [options]
 
 Each command has specific options and input files required to perform the desired calculation.
 
+The process exits with status `0` on success and a non-zero status on failure &ndash; `1` when a command could not complete (a missing input file, an invalid option value, an unreadable result file) and `2` for a usage error such as an unknown subcommand. Scripts can therefore branch on the exit status instead of parsing the output.
+
 ## Commands
 
 ### 1. **Classification Metrics Command**
@@ -81,6 +83,8 @@ aggCl
 There is no `-b` option here: the F-beta scores to aggregate are taken from the result files. Result files written by version 0.2.x (which only contain `f1`) are still readable.
 
 The files are read in alphabetical order by file name, so `singleResults` and `weights` are in a reproducible order regardless of platform.
+
+Every non-hidden file in the directory has to be a classification result. One that is not &ndash; a stray note, or the `-o` output of an earlier run written back into the input directory &ndash; is reported by name and the command exits with status `1`, rather than aggregating over a silently smaller set of results. Hidden files such as `.DS_Store` are skipped, so the directory does not have to be cleaned up first.
 
 **Example Usage:**
 ```bash

@@ -12,7 +12,13 @@ interface ClassificationResult {
         val logger: Logger = LoggerFactory.getLogger(ClassificationResult::class.java)
     }
 
-    /** The confusion matrix the metrics of this result were derived from. */
+    /**
+     * The confusion matrix this result describes: for a single result the counts of its own classified elements, for an aggregation the counts pooled
+     * over all aggregated results.
+     *
+     * The metrics next to it are recomputable from it for a single result and for the micro average. They are **not** for the macro and the weighted
+     * average, which are means over the single results: there the matrix describes the underlying data rather than the origin of the values.
+     */
     val confusionMatrix: ConfusionMatrix
 
     /** Precision of the classification. */

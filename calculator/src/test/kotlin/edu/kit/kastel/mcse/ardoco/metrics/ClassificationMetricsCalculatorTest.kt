@@ -5,6 +5,7 @@ import edu.kit.kastel.mcse.ardoco.metrics.result.ConfusionMatrix
 import org.junit.jupiter.api.Assertions.assertAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -214,6 +215,24 @@ class ClassificationMetricsCalculatorTest {
             {
                 assertDoesNotThrow { calculator.calculateMetrics(classification, groundTruth, 10, listOf(0.5, 2.0, 4.0)).prettyPrint() }
             }
+        )
+    }
+
+    @Test
+    fun everyMetricOfAnEmptyConfusionMatrixIsFiniteTest() {
+        // No metric of this library may ever be NaN or infinite: Jackson serializes those as JSON strings ("NaN", "Infinity") and would thereby break
+        // the `number` type that the REST schema declares for every metric.
+        val result = calculator.calculateMetrics(emptySet<String>(), emptySet(), 0)
+        assertAll(
+            { assertTrue(result.precision.isFinite()) { "precision was ${result.precision}" } },
+            { assertTrue(result.recall.isFinite()) { "recall was ${result.recall}" } },
+            { assertTrue(result.f1.isFinite()) { "f1 was ${result.f1}" } },
+            { assertTrue(result.accuracy!!.isFinite()) { "accuracy was ${result.accuracy}" } },
+            { assertTrue(result.specificity!!.isFinite()) { "specificity was ${result.specificity}" } },
+            { assertTrue(result.phiCoefficient!!.isFinite()) { "phiCoefficient was ${result.phiCoefficient}" } },
+            { assertTrue(result.phiCoefficientMax!!.isFinite()) { "phiCoefficientMax was ${result.phiCoefficientMax}" } },
+            { assertTrue(result.phiOverPhiMax!!.isFinite()) { "phiOverPhiMax was ${result.phiOverPhiMax}" } },
+            { assertEquals(1.0, result.accuracy!!, 1e-9) }
         )
     }
 

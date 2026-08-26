@@ -7,6 +7,7 @@ import edu.kit.kastel.mcse.ardoco.metrics.cli.commands.ClassificationCommand
 import edu.kit.kastel.mcse.ardoco.metrics.result.SingleClassificationResult
 import org.junit.jupiter.api.Assertions.assertAll
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.function.Executable
 import org.junit.jupiter.api.io.TempDir
@@ -311,4 +312,96 @@ class ClassificationCommandTest {
         val emptyDir = dir.resolve("empty").also { it.createDirectory() }
         assertEquals(1, CommandLine(AggregationClassificationCommand()).execute("-d", emptyDir.toString()))
     }
+
+    @Test
+    fun aggregationCommandWithUnreadableFileTest(
+        @TempDir dir: Path
+    ) {
+        // A file that is not a classification result - a stray note, or the aggregation output of an earlier run written back into the input
+        // directory - has to be reported, not thrown as a stack trace.
+        val resultsDir = dir.resolve("results").also { it.createDirectory() }
+        writeResult(resultsDir.resolve("r1.json"), setOf("a", "b"), setOf("a", "c"))
+        resultsDir.resolve("notes.txt").writeText("not a classification result\n")
+        assertEquals(1, CommandLine(AggregationClassificationCommand()).execute("-d", resultsDir.toString()))
+    }
+
+    @Test
+    fun aggregationCommandWithAnAggregationInTheInputDirectoryTest(
+        @TempDir dir: Path
+    ) {
+        val resultsDir = dir.resolve("results").also { it.createDirectory() }
+        writeResult(resultsDir.resolve("r1.json"), setOf("a", "b"), setOf("a", "c"))
+        writeResult(resultsDir.resolve("r2.json"), setOf("d", "e"), setOf("d"))
+        // First run writes its output next to its inputs, which is the natural mistake.
+        assertEquals(
+            0,
+            CommandLine(AggregationClassificationCommand()).execute("-d", resultsDir.toString(), "-o", resultsDir.resolve("agg.json").toString())
+        )
+        // The second run must fail cleanly instead of crashing on its own output.
+        assertEquals(1, CommandLine(AggregationClassificationCommand()).execute("-d", resultsDir.toString()))
+    }
+
+    @Test
+    fun aggregationCommandSkipsHiddenFilesTest(
+        @TempDir dir: Path
+    ) {
+        // Bookkeeping entries such as .DS_Store must not force the caller to clean the directory first.
+        val resultsDir = dir.resolve("results").also { it.createDirectory() }
+        writeResult(resultsDir.resolve("r1.json"), setOf("a", "b"), setOf("a", "c"))
+        writeResult(resultsDir.resolve("r2.json"), setOf("d", "e"), setOf("d"))
+        resultsDir.resolve(".DS_Store").writeText(" binary junk\n")
+        assertEquals(0, CommandLine(AggregationClassificationCommand()).execute("-d", resultsDir.toString()))
+    }
+
+    @Test
+    fun aggregationCommandWithMixedTrueNegativesTest(
+        @TempDir dir: Path
+    ) {
+        // calculateAverages rejects this; the command has to turn it into an exit code rather than let it escape.
+        val resultsDir = dir.resolve("results").also { it.createDirectory() }
+        writeResult(resultsDir.resolve("r1.json"), setOf("a", "b"), setOf("a", "c"), confusionMatrixSum = 8)
+        writeResult(resultsDir.resolve("r2.json"), setOf("d", "e"), setOf("d"), confusionMatrixSum = null)
+        assertEquals(1, CommandLine(AggregationClassificationCommand()).execute("-d", resultsDir.toString()))
+    }
+
+    @Test
+    fun processExitCodeReflectsTheCommandResultTest(
+        @TempDir dir: Path
+    ) {
+        // main() has to hand the command's status to the JVM. Only a real process can prove that; calling execute() directly cannot.
+        val groundTruth = dir.resolve("groundTruth.txt").also { it.writeText("a\n") }
+        val classification = dir.resolve("classification.txt").also { it.writeText("a\n") }
+        assertAll(
+            { assertEquals(0, runCli("classification", "-c", classification.toString(), "-g", groundTruth.toString())) },
+            { assertEquals(1, runCli("classification", "-c", dir.resolve("missing.txt").toString(), "-g", groundTruth.toString())) },
+            { assertEquals(1, runCli("classification", "-c", classification.toString(), "-g", groundTruth.toString(), "-b", "0")) },
+            { assertEquals(1, runCli("aggCl", "-d", classification.toString())) },
+            { assertTrue(runCli("no-such-subcommand") != 0) { "an unknown subcommand must not report success" } }
+        )
+    }
+
+    private fun writeResult(
+        target: Path,
+        classification: Set<String>,
+        groundTruth: Set<String>,
+        confusionMatrixSum: Int? = 8
+    ) = mapper.writeValue(target.toFile(), calculator.calculateMetrics(classification, groundTruth, confusionMatrixSum))
+
+    /** Runs the CLI in its own JVM and returns the process exit status. */
+    private fun runCli(vararg args: String): Int =
+        ProcessBuilder(
+            listOf(
+                ProcessHandle
+                    .current()
+                    .info()
+                    .command()
+                    .orElse("java"),
+                "-cp",
+                System.getProperty("java.class.path"),
+                "edu.kit.kastel.mcse.ardoco.metrics.cli.AppKt"
+            ) + args
+        ).redirectErrorStream(true)
+            .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+            .start()
+            .waitFor()
 }

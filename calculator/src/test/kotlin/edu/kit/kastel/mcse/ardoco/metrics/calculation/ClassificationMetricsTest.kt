@@ -158,9 +158,16 @@ class ClassificationMetricsTest {
     }
 
     @Test
-    fun calculateAccuracyWithoutAnyElementIsNotANumberTest() {
-        // Pins existing behaviour: calculateAccuracy is the only function here without a zero-denominator guard.
-        assertTrue(calculateAccuracy(0, 0, 0, 0).isNaN())
+    fun calculateAccuracyWithoutAnyElementTest() {
+        // An empty confusion matrix returns the same sentinel as its siblings rather than NaN, which no metric of this library may ever be: Jackson
+        // serializes NaN as the JSON string "NaN" and would thereby break the `number` type the REST schema declares.
+        assertAll(
+            { assertEquals(1.0, calculateAccuracy(0, 0, 0, 0), 1e-9) },
+            { assertTrue(calculateAccuracy(0, 0, 0, 0).isFinite()) },
+            { assertEquals(1.0, calculatePrecision(0, 0), 1e-9) },
+            { assertEquals(1.0, calculateRecall(0, 0), 1e-9) },
+            { assertEquals(1.0, calculateSpecificity(0, 0), 1e-9) }
+        )
     }
 
     @Test

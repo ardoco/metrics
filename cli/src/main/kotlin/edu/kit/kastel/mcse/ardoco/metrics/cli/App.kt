@@ -3,9 +3,13 @@ package edu.kit.kastel.mcse.ardoco.metrics.cli
 import edu.kit.kastel.mcse.ardoco.metrics.cli.commands.AggregationClassificationCommand
 import edu.kit.kastel.mcse.ardoco.metrics.cli.commands.ClassificationCommand
 import picocli.CommandLine
+import kotlin.system.exitProcess
 
+/**
+ * Runs the command line and exits with the status the executed command returned, so that a failure is visible to the caller and not just printed.
+ */
 fun main(args: Array<String>) {
-    createCommandLine().execute(*args)
+    exitProcess(createCommandLine().execute(*args))
 }
 
 /** Creates the command line with all supported subcommands. */

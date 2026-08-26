@@ -58,7 +58,10 @@ class OpenApiConfiguration {
                 "falsePositives" to "The elements that were classified but are not in the ground truth, or their number in a confusion matrix.",
                 "falseNegatives" to "The elements that are in the ground truth but were not classified, or their number in a confusion matrix.",
                 "trueNegatives" to "The number of correctly unclassified elements. Null if no confusion matrix sum was provided.",
-                "confusionMatrix" to "The confusion matrix the metrics were derived from. For an aggregation it is pooled over all results.",
+                "confusionMatrix" to
+                    "The confusion matrix the metrics describe; for an aggregation it is pooled over all results. Only a single result and the " +
+                    "micro average are calculated from it. The macro and the weighted average are means over the single results, so their " +
+                    "metrics generally differ from what these counts would give.",
                 "precision" to "TP / (TP + FP). 1.0 if nothing was classified, because then nothing was classified wrongly.",
                 "recall" to "TP / (TP + FN). 1.0 if the ground truth is empty, because then nothing was missed.",
                 "f1" to "The harmonic mean of precision and recall. Always equal to the entry of fbetaScores for beta 1.0.",

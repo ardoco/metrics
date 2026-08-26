@@ -43,6 +43,16 @@ Each of the three is an **`AggregatedClassificationResult`** carrying its `type`
 
 The metrics requiring true negatives are only available if a confusion matrix sum was provided. All aggregated results must agree on this: aggregating results where some have a confusion matrix sum and others do not is rejected.
 
+### The confusion matrix of an aggregation
+
+:warning: All three aggregations carry the **same** pooled `confusionMatrix`, but only the **micro average** is calculated from it. The macro and the weighted average are means over the single results, so their values generally differ from what the pooled counts would give. Recomputing a macro or weighted metric from `macroAverage.confusionMatrix` will **not** reproduce the reported number.
+
+In the example under [Usage Via REST API](Usage-Via-REST-API) the pooled matrix has `TP = 3` and `FP = 3`, so `TP / (TP + FP) = 0.5`. That is exactly the reported micro precision &ndash; but the reported macro precision is `0.7` and the weighted precision `0.76`, because those are the (weighted) means of the per-result precisions `0.4` and `1.0`.
+
+For the macro and the weighted average the matrix therefore describes the **underlying data**, not the origin of the values printed next to it. Use it to see how much data the aggregation covers; use the micro average if you want metrics that follow from those counts.
+
+One exception is worth knowing about: with the **default** weights (`TP + FN`, the size of each gold standard) the weighted **recall** always equals the micro recall exactly, because the weights cancel the per-result denominators. That is an identity, not a coincidence, and it disappears as soon as you pass explicit weights.
+
 ## What the Aggregation Keeps
 
 The aggregated single results and the weights are held **once** by the `ClassificationAggregationResult` rather than once per aggregation type. Everything that can be derived from them is provided on demand instead of being stored:

@@ -61,9 +61,13 @@ Every result exposes all calculated scores as a map keyed by beta (`fbetaScores`
 
 ## Confusion Matrix
 
-Every result also exposes the `confusionMatrix` it was derived from, i.e. the number of true positives, false positives, false negatives and &ndash; if a confusion matrix sum was provided &ndash; true negatives. For a single result these are the sizes of the corresponding element sets; for an aggregation they are the counts pooled over all aggregated results.
+Every result also exposes a `confusionMatrix`, i.e. the number of true positives, false positives, false negatives and &ndash; if a confusion matrix sum was provided &ndash; true negatives. For a single result these are the sizes of the corresponding element sets; for an aggregation they are the counts pooled over all aggregated results.
 
-Note that precision returns `1.0` when nothing was classified (`TP + FP = 0`) and recall returns `1.0` when the ground truth is empty (`TP + FN = 0`), because in those cases nothing was classified wrongly respectively nothing was missed.
+For a single result, and for the micro average of an aggregation, the metrics are exactly the metrics of that matrix. For the macro and the weighted average they are not &ndash; see [Aggregation of Metrics](Aggregation-of-Metrics).
+
+Note that precision returns `1.0` when nothing was classified (`TP + FP = 0`) and recall returns `1.0` when the ground truth is empty (`TP + FN = 0`), because in those cases nothing was classified wrongly respectively nothing was missed. Specificity and accuracy follow the same convention for an empty confusion matrix.
+
+No metric is ever `NaN` or infinite. That matters beyond taste: JSON has no literal for those values, so they would be serialized as the *strings* `"NaN"` and `"Infinity"` and break the `number` type that the REST schema declares.
 
 Each result includes a human-readable format that logs the computed metrics for ease of debugging and verification.
 
