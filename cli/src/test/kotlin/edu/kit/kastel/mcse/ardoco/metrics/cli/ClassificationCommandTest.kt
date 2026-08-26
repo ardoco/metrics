@@ -158,6 +158,29 @@ class ClassificationCommandTest {
     }
 
     @Test
+    fun classificationCommandRejectsAnInvalidSumTest(
+        @TempDir dir: Path
+    ) {
+        // An omitted -s means "unknown", but a supplied one is passed through as given, so a value too small to be a real confusion matrix sum is
+        // rejected instead of being silently treated as if the option had been left out.
+        val classification = dir.resolve("classification.txt").also { it.writeText("a\nb\nc\n") }
+        val groundTruth = dir.resolve("groundTruth.txt").also { it.writeText("a\nb\nd\ne\n") }
+
+        fun run(vararg extraArgs: String) =
+            CommandLine(ClassificationCommand())
+                .execute("-c", classification.toString(), "-g", groundTruth.toString(), *extraArgs)
+
+        assertAll(
+            // 5 elements are classified or expected, so 4 would imply a negative number of true negatives.
+            Executable { assertEquals(1, run("-s", "4")) },
+            Executable { assertEquals(1, run("-s=-1")) },
+            Executable { assertEquals(0, run("-s", "5")) },
+            Executable { assertEquals(0, run()) },
+            Executable { assertEquals(1, run("-b", "0")) }
+        )
+    }
+
+    @Test
     fun classificationCommandWithMissingFileTest(
         @TempDir dir: Path
     ) {

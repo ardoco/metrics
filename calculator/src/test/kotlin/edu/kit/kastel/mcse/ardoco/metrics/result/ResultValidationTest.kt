@@ -58,6 +58,67 @@ class ResultValidationTest {
     }
 
     @Test
+    fun singleResultRejectsAnF1ThatDisagreesWithTheFbetaScoresTest() {
+        // ClassificationResult guarantees that f1 is the F-beta score for beta 1.0; without this check the two accessors could disagree and
+        // aggregation, which reads the map, would silently use the other value.
+        assertAll(
+            Executable { assertThrows<IllegalArgumentException> { single(fbetaScores = mapOf(1.0 to 0.25)) } },
+            Executable { assertThrows<IllegalArgumentException> { single(fbetaScores = mapOf(1.0 to 0.25, 2.0 to 0.5)) } },
+            Executable { assertDoesNotThrow { single(fbetaScores = mapOf(1.0 to 0.5, 2.0 to 0.25)) } },
+            Executable { assertEquals(single().f1, single().fbeta(1.0)) }
+        )
+    }
+
+    @Test
+    fun aggregatedResultRejectsAnF1ThatDisagreesWithTheFbetaScoresTest() {
+        val matrix = ConfusionMatrix(2, 1, 1, 5)
+        assertThrows<IllegalArgumentException> {
+            AggregatedClassificationResult(
+                AggregationType.MACRO_AVERAGE,
+                matrix,
+                0.5,
+                0.5,
+                0.5,
+                mapOf(1.0 to 0.25),
+                null,
+                null,
+                null,
+                null,
+                null
+            )
+        }
+    }
+
+    @Test
+    fun aggregationResultRejectsUnusableWeightsTest() {
+        val aggregation = calculator.calculateAverages(listOf(calculator.calculateMetrics(setOf("a"), setOf("a"), 4)))
+        assertAll(
+            Executable {
+                assertThrows<IllegalArgumentException> {
+                    ClassificationAggregationResult(
+                        aggregation.singleResults,
+                        listOf(-1),
+                        aggregation.macroAverage,
+                        aggregation.weightedAverage,
+                        aggregation.microAverage
+                    )
+                }
+            },
+            Executable {
+                assertThrows<IllegalArgumentException> {
+                    ClassificationAggregationResult(
+                        aggregation.singleResults,
+                        listOf(0),
+                        aggregation.macroAverage,
+                        aggregation.weightedAverage,
+                        aggregation.microAverage
+                    )
+                }
+            }
+        )
+    }
+
+    @Test
     fun singleResultRejectsConfusionMatrixThatDisagreesWithTheElementsTest() {
         assertAll(
             // Wrong counts.

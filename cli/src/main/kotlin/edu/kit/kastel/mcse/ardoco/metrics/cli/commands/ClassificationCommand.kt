@@ -18,7 +18,7 @@ class ClassificationCommand : Callable<Int> {
     var fileHeader: Boolean = false
 
     @Option(names = ["-s", "--sum"], description = ["The sum of the confusion matrix"])
-    var confusionMatrixSum: Int = -1
+    var confusionMatrixSum: Int? = null
 
     @Option(
         names = ["-b", "--beta"],
@@ -53,12 +53,12 @@ class ClassificationCommand : Callable<Int> {
                 .toSet()
         val classificationMetrics = ClassificationMetricsCalculator.Instance
         val result =
-            classificationMetrics.calculateMetrics(
-                classification,
-                groundTruth,
-                if (confusionMatrixSum < 0) null else confusionMatrixSum,
-                betas
-            )
+            try {
+                classificationMetrics.calculateMetrics(classification, groundTruth, confusionMatrixSum, betas)
+            } catch (invalidInput: IllegalArgumentException) {
+                println(invalidInput.message)
+                return 1
+            }
         result.prettyPrint()
         outputFile?.let {
             val outputFileObj = java.io.File(it)

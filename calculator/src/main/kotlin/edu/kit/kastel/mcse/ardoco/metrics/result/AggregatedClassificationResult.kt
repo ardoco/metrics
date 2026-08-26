@@ -25,6 +25,9 @@ data class AggregatedClassificationResult(
 ) : ClassificationResult {
     init {
         require(fbetaScores.containsKey(1.0)) { "The F-beta scores must contain the F1-score (beta 1.0)" }
+        require(fbetaScores.getValue(1.0) == f1) {
+            "The F-beta score for beta 1.0 (${fbetaScores.getValue(1.0)}) must be the F1-score ($f1)"
+        }
     }
 
     override fun prettyPrint() {

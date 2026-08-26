@@ -52,6 +52,14 @@ internal class ClassificationMetricsCalculatorImpl : ClassificationMetricsCalcul
         validate(singleClassificationResults, weights)
 
         val weightsForAverage = weights ?: singleClassificationResults.map { it.truePositives.size + it.falseNegatives.size }
+        require(weightsForAverage.all { it >= 0 }) { "Weights must not be negative but were $weightsForAverage" }
+        require(weightsForAverage.sum() > 0) {
+            if (weights == null) {
+                "At least one result must have a non-empty ground truth, otherwise all default weights are 0. Provide explicit weights instead."
+            } else {
+                "At least one weight must be greater than 0 but all weights were 0"
+            }
+        }
         val betasForAverage = normalizeBetas(betas ?: singleClassificationResults.flatMap { it.fbetaScores.keys })
         val pooledConfusionMatrix = singleClassificationResults.map { it.confusionMatrix }.reduce(ConfusionMatrix::plus)
 

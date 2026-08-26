@@ -32,6 +32,9 @@ data class SingleClassificationResult<T>(
     init {
         require(trueNegatives == null || trueNegatives >= 0) { "The number of true negatives must not be negative but was $trueNegatives" }
         require(fbetaScores.containsKey(1.0)) { "The F-beta scores must contain the F1-score (beta 1.0)" }
+        require(fbetaScores.getValue(1.0) == f1) {
+            "The F-beta score for beta 1.0 (${fbetaScores.getValue(1.0)}) must be the F1-score ($f1)"
+        }
         require(confusionMatrix == ConfusionMatrix(truePositives.size, falsePositives.size, falseNegatives.size, trueNegatives)) {
             "The confusion matrix $confusionMatrix does not match the classified elements"
         }

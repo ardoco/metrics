@@ -122,6 +122,23 @@ class ClassificationMetricsTest {
         )
     }
 
+    @Test
+    fun calculateFBetaIsStableForExtremeBetasTest() {
+        // Squaring the beta directly would overflow to infinity above roughly 1.3e154 and turn the result into NaN, which the guard would then
+        // report as 0.0 instead of approaching the recall.
+        assertAll(
+            Executable { assertEquals(1.0, calculateFBeta(.5, 1.0, 1e200), 1e-9) },
+            Executable { assertEquals(1.0, calculateFBeta(.5, 1.0, Double.MAX_VALUE), 1e-9) },
+            Executable { assertEquals(.1, calculateFBeta(.9, .1, 1e200), 1e-9) },
+            // The other end of the range underflows instead, which correctly approaches the precision.
+            Executable { assertEquals(.9, calculateFBeta(.9, .1, Double.MIN_VALUE), 1e-9) },
+            Executable { assertEquals(.5, calculateFBeta(.5, 1.0, 1e-200), 1e-9) },
+            // Ordinary betas are unaffected by the reformulation.
+            Executable { assertEquals(.8333333333333334, calculateFBeta(.5, 1.0, 2.0), 1e-15) },
+            Executable { assertEquals(.9999990000019998, calculateFBeta(.5, 1.0, 1000.0), 1e-15) }
+        )
+    }
+
     @ParameterizedTest
     @ValueSource(doubles = [0.0, -1.0, -0.5, Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY])
     fun calculateFBetaRejectsInvalidBetaTest(beta: Double) {

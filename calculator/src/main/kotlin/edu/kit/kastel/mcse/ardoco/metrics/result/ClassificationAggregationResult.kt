@@ -26,6 +26,8 @@ data class ClassificationAggregationResult<T>(
         require(weights.size == singleResults.size) {
             "There must be exactly one weight per single result but there were ${weights.size} weights for ${singleResults.size} results"
         }
+        require(weights.all { it >= 0 }) { "Weights must not be negative but were $weights" }
+        require(weights.sum() > 0) { "At least one weight must be greater than 0 but all weights were 0" }
         require(macroAverage.type == AggregationType.MACRO_AVERAGE) { "macroAverage must be of type ${AggregationType.MACRO_AVERAGE}" }
         require(weightedAverage.type == AggregationType.WEIGHTED_AVERAGE) { "weightedAverage must be of type ${AggregationType.WEIGHTED_AVERAGE}" }
         require(microAverage.type == AggregationType.MICRO_AVERAGE) { "microAverage must be of type ${AggregationType.MICRO_AVERAGE}" }

@@ -207,6 +207,83 @@ class OpenApiDocumentationTest {
     }
 
     @Test
+    fun examplesMatchTheirSchemaTest() {
+        // An example that does not satisfy its own schema cannot be used by Swagger clients or schema validators, and silently misdocuments the API.
+        val schemas = apiDocs.get("components").get("schemas")
+        listOf("SingleClassificationResultString", "ClassificationAggregationResultString").forEach { schemaName ->
+            val schema = schemas.get(schemaName)
+            validate(schema.get("example"), schema, schemas, schemaName)
+        }
+    }
+
+    @Test
+    fun requestExamplesMatchTheirSchemaTest() {
+        val schemas = apiDocs.get("components").get("schemas")
+        listOf("/classification-metrics", "/classification-metrics/average").forEach { path ->
+            val content =
+                apiDocs
+                    .get("paths")
+                    .get(path)
+                    .get("post")
+                    .get("requestBody")
+                    .get("content")
+                    .get("application/json")
+            val schema =
+                schemas.get(
+                    content
+                        .get("schema")
+                        .get("${"\$"}ref")
+                        .textValue()
+                        .substringAfterLast('/')
+                )
+            content.get("examples").fields().forEach { (name, example) ->
+                validate(example.get("value"), schema, schemas, "$path example '$name'")
+            }
+        }
+    }
+
+    /** Checks that [example] only uses properties the schema declares and that their kinds agree, resolving `${'$'}ref`s along the way. */
+    private fun validate(
+        example: JsonNode?,
+        schema: JsonNode?,
+        schemas: JsonNode,
+        where: String
+    ) {
+        if (example == null || schema == null) return
+        val resolved = schema.get("${"\$"}ref")?.textValue()?.let { schemas.get(it.substringAfterLast('/')) } ?: schema
+        when {
+            example.isObject -> {
+                val properties = resolved.get("properties") ?: return
+                example.fields().forEach { (name, value) ->
+                    val property = properties.get(name)
+                    assertTrue(property != null) { "$where: the example has a property '$name' that the schema does not declare" }
+                    validate(value, property, schemas, "$where.$name")
+                }
+            }
+
+            example.isArray -> {
+                val items = resolved.get("items") ?: return
+                example.forEachIndexed { index, item -> validate(item, items, schemas, "$where[$index]") }
+            }
+
+            else -> {
+                val type = resolved.get("type")?.textValue() ?: return
+                val matches =
+                    when (type) {
+                        "object" -> example.isObject
+                        "array" -> example.isArray
+                        "string" -> example.isTextual
+                        "integer" -> example.isIntegralNumber
+                        "number" -> example.isNumber
+                        "boolean" -> example.isBoolean
+                        else -> true
+                    }
+                assertTrue(matches || example.isNull) { "$where: the example is ${example.nodeType} but the schema declares '$type'" }
+            }
+        }
+    }
+
+    @Test
     fun noDuplicateResultSchemasTest() {
         // A @Schema(implementation = ...) on a response would add a second, raw-typed copy of the result schemas next to the generic ones.
         val names =

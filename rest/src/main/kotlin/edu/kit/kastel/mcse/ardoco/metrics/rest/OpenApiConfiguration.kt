@@ -88,66 +88,184 @@ class OpenApiConfiguration {
             )
 
         const val SINGLE_RESULT_EXAMPLE = """{
-  "truePositives" : [ "A", "B" ],
-  "falsePositives" : [ "C", "D", "E" ],
-  "falseNegatives" : [ ],
-  "trueNegatives" : 15,
-  "precision" : 0.4,
-  "recall" : 1.0,
-  "f1" : 0.5714285714285715,
-  "fbetaScores" : { "0.5" : 0.45454545454545453, "1.0" : 0.5714285714285715, "2.0" : 0.7692307692307692 },
-  "accuracy" : 0.85,
-  "specificity" : 0.8333333333333334,
-  "phiCoefficient" : 0.5773502691896257,
-  "phiCoefficientMax" : 0.5773502691896257,
-  "phiOverPhiMax" : 1.0,
-  "confusionMatrix" : { "truePositives" : 2, "falsePositives" : 3, "falseNegatives" : 0, "trueNegatives" : 15 }
-}"""
+          "truePositives": [
+            "A",
+            "B"
+          ],
+          "falsePositives": [
+            "C",
+            "D",
+            "E"
+          ],
+          "falseNegatives": [],
+          "trueNegatives": 15,
+          "precision": 0.4,
+          "recall": 1.0,
+          "f1": 0.5714285714285715,
+          "fbetaScores": {
+            "0.5": 0.45454545454545453,
+            "1.0": 0.5714285714285715,
+            "2.0": 0.7692307692307692
+          },
+          "accuracy": 0.85,
+          "specificity": 0.8333333333333334,
+          "phiCoefficient": 0.5773502691896257,
+          "phiCoefficientMax": 0.5773502691896257,
+          "phiOverPhiMax": 1.0,
+          "confusionMatrix": {
+            "truePositives": 2,
+            "falsePositives": 3,
+            "falseNegatives": 0,
+            "trueNegatives": 15
+          }
+        }"""
 
         const val AGGREGATION_EXAMPLE = """{
-  "singleResults" : [ "... the aggregated results, each in the shape of a single classification result ..." ],
-  "weights" : [ 2, 3 ],
-  "macroAverage" : {
-    "type" : "MACRO_AVERAGE",
-    "confusionMatrix" : { "truePositives" : 3, "falsePositives" : 3, "falseNegatives" : 2, "trueNegatives" : 32 },
-    "precision" : 0.7,
-    "recall" : 0.6666666666666666,
-    "f1" : 0.5357142857142858,
-    "fbetaScores" : { "0.5" : 0.5844155844155844, "1.0" : 0.5357142857142858, "2.0" : 0.5769230769230769 },
-    "accuracy" : 0.875,
-    "specificity" : 0.9166666666666667,
-    "phiCoefficient" : 0.5617344752311879,
-    "phiCoefficientMax" : 0.5617344752311879,
-    "phiOverPhiMax" : 1.0
-  },
-  "weightedAverage" : {
-    "type" : "WEIGHTED_AVERAGE",
-    "confusionMatrix" : { "truePositives" : 3, "falsePositives" : 3, "falseNegatives" : 2, "trueNegatives" : 32 },
-    "precision" : 0.76,
-    "recall" : 0.6,
-    "f1" : 0.5285714285714287,
-    "fbetaScores" : { "0.5" : 0.6103896103896104, "1.0" : 0.5285714285714287, "2.0" : 0.5384615384615384 },
-    "accuracy" : 0.8800000000000001,
-    "specificity" : 0.9333333333333333,
-    "phiCoefficient" : 0.5586113164395005,
-    "phiCoefficientMax" : 0.5586113164395005,
-    "phiOverPhiMax" : 1.0
-  },
-  "microAverage" : {
-    "type" : "MICRO_AVERAGE",
-    "confusionMatrix" : { "truePositives" : 3, "falsePositives" : 3, "falseNegatives" : 2, "trueNegatives" : 32 },
-    "precision" : 0.5,
-    "recall" : 0.6,
-    "f1" : 0.5454545454545454,
-    "fbetaScores" : { "0.5" : 0.5172413793103449, "1.0" : 0.5454545454545454, "2.0" : 0.5769230769230769 },
-    "accuracy" : 0.875,
-    "specificity" : 0.9142857142857143,
-    "phiCoefficient" : 0.4763305116224668,
-    "phiCoefficientMax" : 0.8997354108424374,
-    "phiOverPhiMax" : 0.5294117647058824
-  },
-  "confusionMatrix" : { "truePositives" : 3, "falsePositives" : 3, "falseNegatives" : 2, "trueNegatives" : 32 },
-  "betas" : [ 0.5, 1.0, 2.0 ]
-}"""
+          "singleResults": [
+            {
+              "truePositives": [
+                "A",
+                "B"
+              ],
+              "falsePositives": [
+                "C",
+                "D",
+                "E"
+              ],
+              "falseNegatives": [],
+              "trueNegatives": 15,
+              "precision": 0.4,
+              "recall": 1.0,
+              "f1": 0.5714285714285715,
+              "fbetaScores": {
+                "0.5": 0.45454545454545453,
+                "1.0": 0.5714285714285715,
+                "2.0": 0.7692307692307692
+              },
+              "accuracy": 0.85,
+              "specificity": 0.8333333333333334,
+              "phiCoefficient": 0.5773502691896257,
+              "phiCoefficientMax": 0.5773502691896257,
+              "phiOverPhiMax": 1.0,
+              "confusionMatrix": {
+                "truePositives": 2,
+                "falsePositives": 3,
+                "falseNegatives": 0,
+                "trueNegatives": 15
+              }
+            },
+            {
+              "truePositives": [
+                "F"
+              ],
+              "falsePositives": [],
+              "falseNegatives": [
+                "G",
+                "H"
+              ],
+              "trueNegatives": 17,
+              "precision": 1.0,
+              "recall": 0.3333333333333333,
+              "f1": 0.5,
+              "fbetaScores": {
+                "0.5": 0.7142857142857143,
+                "1.0": 0.5,
+                "2.0": 0.3846153846153846
+              },
+              "accuracy": 0.9,
+              "specificity": 1.0,
+              "phiCoefficient": 0.5461186812727502,
+              "phiCoefficientMax": 0.5461186812727502,
+              "phiOverPhiMax": 1.0,
+              "confusionMatrix": {
+                "truePositives": 1,
+                "falsePositives": 0,
+                "falseNegatives": 2,
+                "trueNegatives": 17
+              }
+            }
+          ],
+          "weights": [
+            2,
+            3
+          ],
+          "macroAverage": {
+            "type": "MACRO_AVERAGE",
+            "confusionMatrix": {
+              "truePositives": 3,
+              "falsePositives": 3,
+              "falseNegatives": 2,
+              "trueNegatives": 32
+            },
+            "precision": 0.7,
+            "recall": 0.6666666666666666,
+            "f1": 0.5357142857142858,
+            "fbetaScores": {
+              "0.5": 0.5844155844155844,
+              "1.0": 0.5357142857142858,
+              "2.0": 0.5769230769230769
+            },
+            "accuracy": 0.875,
+            "specificity": 0.9166666666666667,
+            "phiCoefficient": 0.5617344752311879,
+            "phiCoefficientMax": 0.5617344752311879,
+            "phiOverPhiMax": 1.0
+          },
+          "weightedAverage": {
+            "type": "WEIGHTED_AVERAGE",
+            "confusionMatrix": {
+              "truePositives": 3,
+              "falsePositives": 3,
+              "falseNegatives": 2,
+              "trueNegatives": 32
+            },
+            "precision": 0.76,
+            "recall": 0.6,
+            "f1": 0.5285714285714287,
+            "fbetaScores": {
+              "0.5": 0.6103896103896104,
+              "1.0": 0.5285714285714287,
+              "2.0": 0.5384615384615384
+            },
+            "accuracy": 0.8800000000000001,
+            "specificity": 0.9333333333333333,
+            "phiCoefficient": 0.5586113164395005,
+            "phiCoefficientMax": 0.5586113164395005,
+            "phiOverPhiMax": 1.0
+          },
+          "microAverage": {
+            "type": "MICRO_AVERAGE",
+            "confusionMatrix": {
+              "truePositives": 3,
+              "falsePositives": 3,
+              "falseNegatives": 2,
+              "trueNegatives": 32
+            },
+            "precision": 0.5,
+            "recall": 0.6,
+            "f1": 0.5454545454545454,
+            "fbetaScores": {
+              "0.5": 0.5172413793103449,
+              "1.0": 0.5454545454545454,
+              "2.0": 0.5769230769230769
+            },
+            "accuracy": 0.875,
+            "specificity": 0.9142857142857143,
+            "phiCoefficient": 0.4763305116224668,
+            "phiCoefficientMax": 0.8997354108424374,
+            "phiOverPhiMax": 0.5294117647058824
+          },
+          "betas": [
+            0.5,
+            1.0,
+            2.0
+          ],
+          "confusionMatrix": {
+            "truePositives": 3,
+            "falsePositives": 3,
+            "falseNegatives": 2,
+            "trueNegatives": 32
+          }
+        }"""
     }
 }

@@ -57,8 +57,16 @@ fun calculateFBeta(
     beta: Double
 ): Double {
     require(beta > 0.0 && beta.isFinite()) { "Beta must be a finite number greater than 0 but was $beta" }
-    val betaSquared = beta * beta
-    val fBeta = (1 + betaSquared) * (precision * recall) / ((betaSquared * precision) + recall)
+    // Squaring the beta would overflow to infinity for very large betas and turn the whole expression into NaN, so for beta > 1 the equivalent form
+    // scaled by 1/beta^2 is used instead. Both factors stay within [0, 1], which keeps the result correct over the entire finite beta domain.
+    val fBeta =
+        if (beta <= 1.0) {
+            val betaSquared = beta * beta
+            (1 + betaSquared) * (precision * recall) / ((betaSquared * precision) + recall)
+        } else {
+            val inverseBetaSquared = 1.0 / (beta * beta)
+            (inverseBetaSquared + 1) * (precision * recall) / (precision + (inverseBetaSquared * recall))
+        }
     return if (fBeta.isNaN()) 0.0 else fBeta
 }
 

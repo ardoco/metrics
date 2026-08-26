@@ -425,6 +425,30 @@ class ClassificationAggregationTest {
     }
 
     @Test
+    fun unusableWeightsAreRejectedTest() {
+        // A weighted mean divides by the sum of the weights, so an all-zero or negative set of weights would produce NaN or out-of-range metrics.
+        assertAll(
+            Executable { assertThrows<IllegalArgumentException> { aggregate(weights = listOf(0, 0, 0)) } },
+            Executable { assertThrows<IllegalArgumentException> { aggregate(weights = listOf(-1, 2, 3)) } },
+            Executable { assertThrows<IllegalArgumentException> { aggregate(weights = listOf(1, -1, 0)) } },
+            // A single positive weight is enough.
+            Executable { assertDoesNotThrow { aggregate(weights = listOf(0, 0, 1)) } }
+        )
+    }
+
+    @Test
+    fun emptyGroundTruthsMakeTheDefaultWeightsUnusableTest() {
+        // The default weight of a result is the size of its ground truth, so results without a ground truth would all weigh 0.
+        val empty = calculator.calculateMetrics(emptySet<String>(), emptySet(), 10)
+        val thrown = assertThrows<IllegalArgumentException> { calculator.calculateAverages(listOf(empty, empty)) }
+        assertAll(
+            Executable { assertTrue(thrown.message!!.contains("ground truth")) { "the message should explain the cause: ${thrown.message}" } },
+            // Explicit weights make it well-defined again.
+            Executable { assertDoesNotThrow { calculator.calculateAverages(listOf(empty, empty), listOf(1, 1)) } }
+        )
+    }
+
+    @Test
     fun invalidBetaOverrideIsRejectedTest() {
         assertAll(
             Executable { assertThrows<IllegalArgumentException> { aggregate(betaOverride = listOf(0.0)) } },
