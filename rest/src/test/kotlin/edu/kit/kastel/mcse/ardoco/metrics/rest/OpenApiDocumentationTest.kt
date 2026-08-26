@@ -50,7 +50,7 @@ class OpenApiDocumentationTest {
     fun apiInfoIsPresentTest() {
         val info = apiDocs.get("info")
         assertAll(
-            Executable { assertEquals("ArDoCo: Metrics", info.get("title").textValue()) },
+            Executable { assertEquals("ARDoCo: Metrics", info.get("title").textValue()) },
             Executable { assertTrue(info.get("description").textValue().isNotBlank()) },
             Executable {
                 assertTrue(

@@ -10,11 +10,11 @@ import org.springframework.boot.runApplication
 @OpenAPIDefinition(
     info =
         Info(
-            title = "ArDoCo: Metrics",
+            title = "ARDoCo: Metrics",
             description = "This tool provides functionality to calculate and aggregate classification metrics for various tasks.",
-            license = License(name = "MIT License", url = "https://github.com/ArDoCo/Metrics/blob/main/LICENSE.md")
+            license = License(name = "MIT License", url = "https://github.com/ardoco/metrics/blob/main/LICENSE.md")
         ),
-    externalDocs = ExternalDocumentation(description = "ArDoCo: Metrics - Wiki", url = "https://github.com/ArDoCo/metrics/wiki")
+    externalDocs = ExternalDocumentation(description = "ARDoCo: Metrics - Wiki", url = "https://github.com/ardoco/metrics/wiki")
 )
 @SpringBootApplication
 class Application

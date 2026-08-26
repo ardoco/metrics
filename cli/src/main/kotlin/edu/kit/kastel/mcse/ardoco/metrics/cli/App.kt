@@ -15,8 +15,8 @@ internal fun createCommandLine(): CommandLine =
         .addSubcommand("aggCl", AggregationClassificationCommand())
 
 @CommandLine.Command(
-    name = "ArDoCo Metrics",
+    name = "ARDoCo Metrics",
     mixinStandardHelpOptions = true,
-    description = ["CLI for ArDoCo Metrics"]
+    description = ["CLI for ARDoCo Metrics"]
 )
 class RootCommand

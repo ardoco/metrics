@@ -1,6 +1,6 @@
-Welcome to the **ArDoCo Metrics Calculator** project! This tool provides functionality to calculate and aggregate **classification metrics** for various machine learning tasks.
+Welcome to the **ARDoCo Metrics Calculator** project! This tool provides functionality to calculate and aggregate **classification metrics** for various machine learning tasks.
 
-This Wiki contains all the necessary information to use the **ArDoCo Metrics Calculator** via multiple interfaces, including a library, REST API, and command-line interface (CLI).
+This Wiki contains all the necessary information to use the **ARDoCo Metrics Calculator** via multiple interfaces, including a library, REST API, and command-line interface (CLI).
 
 
 ## 1. Classification Metrics
@@ -22,7 +22,7 @@ Aggregation allows you to compute an overall metric from multiple classification
 
 ### 3.1 Usage via Library
 
-The **ArDoCo Metrics Calculator** can be integrated into your project as a library. This section provides instructions for adding the project as a Maven dependency and examples of how to calculate metrics programmatically.
+The **ARDoCo Metrics Calculator** can be integrated into your project as a library. This section provides instructions for adding the project as a Maven dependency and examples of how to calculate metrics programmatically.
 
 [Read more about Usage via Library](Usage-Via-Library)
 
