@@ -11,6 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
@@ -210,10 +211,23 @@ class ClassificationMetricsControllerTest {
     }
 
     @Test
-    fun unknownPathIsReportedAsServerErrorTest() {
-        // Pins existing behaviour: Handler maps everything except IllegalArgumentException and NullPointerException to 500, so an unknown path is
-        // answered with 500 rather than 404.
-        mockMvc.perform(get("/does-not-exist")).andExpect(status().isInternalServerError)
+    fun springStatusCodesArePreservedTest() {
+        // Handler extends ResponseEntityExceptionHandler, so the exceptions Spring MVC raises itself keep their own status instead of being
+        // swallowed by the catch-all and reported as 500.
+        assertAll(
+            // Unknown path.
+            Executable { mockMvc.perform(get("/does-not-exist")).andExpect(status().isNotFound) },
+            // Unsupported method on a known path.
+            Executable { mockMvc.perform(delete("/classification-metrics")).andExpect(status().isMethodNotAllowed) },
+            // Malformed request body.
+            Executable {
+                postJson("/classification-metrics", "{ not json }").andExpect(status().isBadRequest)
+            },
+            // A required property missing from the body.
+            Executable {
+                postJson("/classification-metrics", """{ "classification": ["a"] }""").andExpect(status().isBadRequest)
+            }
+        )
     }
 
     @Test

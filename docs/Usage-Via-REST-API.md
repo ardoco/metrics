@@ -180,4 +180,7 @@ Invalid input is answered with **400 Bad Request** and the reason as the body, f
 - a `weights` array whose length does not match the number of requests,
 - a `confusionMatrixSum` smaller than the number of classified and expected elements,
 - a mix of requests with and without a `confusionMatrixSum` on the `/average` endpoint,
-- `betas` given inside a single request on the `/average` endpoint.
+- `betas` given inside a single request on the `/average` endpoint,
+- a malformed request body, or a body missing a required property.
+
+Requests that do not reach an endpoint keep their usual status: **404 Not Found** for an unknown path and **405 Method Not Allowed** for an unsupported method. Only genuinely unexpected failures are reported as **500 Internal Server Error**.

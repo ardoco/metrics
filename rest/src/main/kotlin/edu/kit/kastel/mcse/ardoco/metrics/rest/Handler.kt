@@ -6,9 +6,16 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.ControllerAdvice
 import org.springframework.web.bind.annotation.ExceptionHandler
+import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler
 
+/**
+ * Maps exceptions to responses.
+ *
+ * Extending [ResponseEntityExceptionHandler] keeps the status codes that Spring MVC already defines for its own exceptions, so an unknown path stays a
+ * 404, an unsupported method a 405 and a malformed request body a 400. Only exceptions that Spring does not know about reach the handlers below.
+ */
 @ControllerAdvice
-class Handler {
+class Handler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(Exception::class)
     fun handle(
         ex: Exception?,

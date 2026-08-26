@@ -30,8 +30,8 @@ class HandlerTest {
 
     @Test
     fun anyOtherExceptionBecomesInternalServerErrorTest() {
-        // Pins existing behaviour: everything that is not an IllegalArgumentException or a NullPointerException is reported as a server error,
-        // including a request for an unknown path.
+        // Only exceptions Spring MVC does not define a status for reach this handler; the ones it does keep their own status because Handler
+        // extends ResponseEntityExceptionHandler.
         val response = handler.handle(IllegalStateException("boom"), null, null)
         assertAll(
             Executable { assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.statusCode) },
