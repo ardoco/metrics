@@ -59,6 +59,8 @@ Every result exposes all calculated scores as a map keyed by beta (`fbetaScores`
 
 8. **Phi Over Phi Max (optional)**: The ratio of the phi coefficient to its maximum possible value.
 
+   :warning: This is only a normalized score while the phi coefficient is **non-negative**, where it lies in `[0, 1]`. Phi Max is the largest *positive* phi the marginals allow, so it does not bound a negatively correlated classification &ndash; that one is limited by the most negative attainable phi, which generally has a different magnitude. For a negative phi the ratio can therefore fall below `-1` without any bound: `TP=0, FP=1, FN=2, TN=0` gives phi `-1.0`, Phi Max `0.5` and a ratio of `-2.0`. Read such a value as "strongly negatively correlated", not as a score. Phi and Phi Max themselves are correct in both regimes; only their ratio is affected.
+
 ## Confusion Matrix
 
 Every result also exposes a `confusionMatrix`, i.e. the number of true positives, false positives, false negatives and &ndash; if a confusion matrix sum was provided &ndash; true negatives. For a single result these are the sizes of the corresponding element sets; for an aggregation they are the counts pooled over all aggregated results.

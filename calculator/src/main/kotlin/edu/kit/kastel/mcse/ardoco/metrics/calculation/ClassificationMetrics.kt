@@ -186,11 +186,17 @@ fun calculatePhiCoefficientMax(
 /**
  * Calculates the normalized phi correlation coefficient value that is phi divided by its maximum possible value.
  *
+ * Only meaningful for a non-negative phi, where the result lies in [0, 1]. [calculatePhiCoefficientMax] is the largest *positive* phi the marginals
+ * allow, so it does not bound a negatively correlated classification: that one is limited by the most negative attainable phi, which generally has a
+ * different magnitude. For a negative phi the result may therefore be smaller than -1 without any bound &ndash; for example -2.0 for
+ * `(tp, fp, fn, tn) = (0, 1, 2, 0)`. Callers reporting this metric for classifications that can perform worse than chance should treat a value
+ * outside [-1, 1] as "strongly negatively correlated" rather than as a normalized score.
+ *
  * @param truePositives  number of true positives
  * @param falsePositives number of false positives
  * @param falseNegatives number of false negatives
  * @param trueNegatives  number of true negatives
- * @return The value of Phi/PhiMax
+ * @return The value of Phi/PhiMax; within [0, 1] iff phi is non-negative
  * @see [Paper about Phi/PhiMax](https://journals.sagepub.com/doi/abs/10.1177/001316449105100403)
  */
 fun calculatePhiOverPhiMax(

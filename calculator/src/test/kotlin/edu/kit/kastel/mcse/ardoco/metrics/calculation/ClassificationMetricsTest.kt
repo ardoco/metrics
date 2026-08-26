@@ -371,7 +371,12 @@ class ClassificationMetricsTest {
         "6, 1, 2, 3",
         "3, 7, 2, 8",
         "210, 22, 31, 1337",
-        "10, 55, 55, 20"
+        "10, 55, 55, 20",
+        // Negative phi with unequal marginals. Every other negatively correlated row above happens to have equal marginals, which forces phiMax to
+        // 1.0 and hides that phi/phiMax is only bounded for a non-negative phi.
+        "0, 1, 2, 0",
+        "1, 1, 6, 1",
+        "18, 1, 20, 0"
     )
     fun metricInvariantsTest(
         tp: Int,
@@ -395,13 +400,40 @@ class ClassificationMetricsTest {
             { assertInUnitInterval("F2", calculateFBeta(precision, recall, 2.0)) },
             { assertInUnitInterval("phiMax", phiMax) },
             { assertTrue(abs(phi) <= 1.0 + 1e-9) { "phi must be within [-1, 1] but was $phi" } },
-            { assertTrue(abs(phiOverPhiMax) <= 1.0 + 1e-9) { "phi/phiMax must be within [-1, 1] but was $phiOverPhiMax" } },
-            { assertTrue(phiMax >= abs(phi) - 1e-9) { "phiMax ($phiMax) must not be smaller than abs(phi) (${abs(phi)})" } },
+            // phiMax is the largest *positive* phi the marginals allow, so it bounds phi only where phi is non-negative. A negatively correlated
+            // classification is bounded by the most negative attainable phi instead, which has a different magnitude, and phi/phiMax may then leave
+            // [-1, 1]. See negativePhiIsNotBoundedByPhiMaxTest.
+            {
+                if (phi >= 0.0) {
+                    assertTrue(phiMax >= phi - 1e-9) { "phiMax ($phiMax) must not be smaller than a non-negative phi ($phi)" }
+                    assertTrue(
+                        phiOverPhiMax in -1e-9..(1.0 + 1e-9)
+                    ) { "phi/phiMax must be within [0, 1] for a non-negative phi but was $phiOverPhiMax" }
+                }
+            },
             {
                 val lower = min(precision, recall)
                 val upper = max(precision, recall)
                 assertTrue(f1 >= lower - 1e-9 && f1 <= upper + 1e-9) { "F1 ($f1) must lie between precision and recall ($lower..$upper)" }
             }
+        )
+    }
+
+    @Test
+    fun negativePhiIsNotBoundedByPhiMaxTest() {
+        // Pins the documented limitation rather than a desirable property. phiMax is Ferguson's maximum of the *positive* phi for the given
+        // marginals, so it does not bound a negatively correlated classification and the ratio can leave [-1, 1] without limit. Cross-checked
+        // against scikit-learn: calculatePhiCoefficient agrees with matthews_corrcoef and calculatePhiCoefficientMax agrees with the reference
+        // formula on every one of these; only their ratio is outside [-1, 1].
+        assertAll(
+            { assertEquals(-1.0, calculatePhiCoefficient(0, 1, 2, 0), 1e-9) },
+            { assertEquals(0.5, calculatePhiCoefficientMax(0, 1, 2, 0), 1e-9) },
+            { assertEquals(-2.0, calculatePhiOverPhiMax(0, 1, 2, 0), 1e-9) },
+            { assertEquals(-1.25, calculatePhiOverPhiMax(1, 1, 6, 1), 1e-9) },
+            { assertEquals(-4.0, calculatePhiOverPhiMax(0, 1, 4, 0), 1e-9) },
+            // A non-negative phi is always bounded, which is the regime the metric is meant for.
+            { assertTrue(calculatePhiOverPhiMax(6, 1, 2, 3) <= 1.0 + 1e-9) },
+            { assertTrue(calculatePhiOverPhiMax(210, 22, 31, 1337) <= 1.0 + 1e-9) }
         )
     }
 

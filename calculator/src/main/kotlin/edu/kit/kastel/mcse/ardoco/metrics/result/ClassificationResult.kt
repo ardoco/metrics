@@ -45,7 +45,10 @@ interface ClassificationResult {
     /** Maximum phi coefficient of the classification. */
     val phiCoefficientMax: Double?
 
-    /** Phi coefficient over maximum phi coefficient of the classification. */
+    /**
+     * Phi coefficient over maximum phi coefficient of the classification. Within [0, 1] for a non-negative [phiCoefficient]; for a negative one it is
+     * not a normalized score and may fall below -1, see `calculatePhiOverPhiMax`.
+     */
     val phiOverPhiMax: Double?
 
     /**
