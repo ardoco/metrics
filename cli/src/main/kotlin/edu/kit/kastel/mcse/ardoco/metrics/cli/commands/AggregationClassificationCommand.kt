@@ -30,12 +30,18 @@ class AggregationClassificationCommand : Callable<Int> {
             return 1
         }
         val oom = createObjectMapper()
+        // File.listFiles() returns entries in filesystem order, which differs between platforms and runs. Sorting by name keeps the aggregated
+        // results, and therefore the weights derived from them, in a reproducible order.
         val results: List<SingleClassificationResult<String>> =
-            directory.listFiles()?.filter { it.isFile }?.map {
-                oom.readValue(
-                    it.inputStream()
-                )
-            } ?: emptyList()
+            directory
+                .listFiles()
+                ?.filter { it.isFile }
+                ?.sortedBy { it.name }
+                ?.map {
+                    oom.readValue(
+                        it.inputStream()
+                    )
+                } ?: emptyList()
         if (results.isEmpty()) {
             println("No classification results found")
             return 1

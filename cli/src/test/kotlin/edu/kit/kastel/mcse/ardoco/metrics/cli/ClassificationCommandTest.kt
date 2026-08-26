@@ -201,6 +201,38 @@ class ClassificationCommandTest {
     }
 
     @Test
+    fun aggregationCommandReadsResultFilesInNameOrderTest(
+        @TempDir dir: Path
+    ) {
+        // File.listFiles() returns entries in filesystem order, which is alphabetical on some platforms and arbitrary on others. The files are
+        // therefore written in an order that contradicts their names, and the aggregation has to follow the names regardless.
+        val resultsDir = dir.resolve("results").also { it.createDirectory() }
+        val groundTruthSizes = listOf("c" to 6, "a" to 2, "b" to 4)
+        groundTruthSizes.forEach { (name, groundTruthSize) ->
+            val groundTruth = (1..groundTruthSize).map { "$name$it" }.toSet()
+            resultsDir.resolve("$name.json").writeText(
+                mapper.writeValueAsString(calculator.calculateMetrics(groundTruth, groundTruth, groundTruthSize * 2))
+            )
+        }
+        val output = dir.resolve("aggregation.json")
+
+        val exitCode = CommandLine(AggregationClassificationCommand()).execute("-d", resultsDir.toString(), "-o", output.toString())
+
+        val tree = mapper.readTree(output.toFile())
+        assertAll(
+            Executable { assertEquals(0, exitCode) },
+            // The default weight is the size of the ground truth, so the weights reveal the order the files were read in: a, b, c.
+            Executable { assertEquals(listOf(2, 4, 6), tree.get("weights").map { it.intValue() }) },
+            Executable {
+                assertEquals(
+                    listOf(2, 4, 6),
+                    tree.get("singleResults").map { it.get("confusionMatrix").get("truePositives").intValue() }
+                )
+            }
+        )
+    }
+
+    @Test
     fun aggregationCommandReadsLegacyResultFilesTest(
         @TempDir dir: Path
     ) {

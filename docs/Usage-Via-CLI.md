@@ -80,6 +80,8 @@ aggCl
 
 There is no `-b` option here: the F-beta scores to aggregate are taken from the result files. Result files written by version 0.2.x (which only contain `f1`) are still readable.
 
+The files are read in alphabetical order by file name, so `singleResults` and `weights` are in a reproducible order regardless of platform.
+
 **Example Usage:**
 ```bash
 java -jar metrics-cli.jar aggCl -d classifiedDir/ -o aggregated_result.json
