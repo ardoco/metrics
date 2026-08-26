@@ -24,8 +24,8 @@ class ResultSerializationTest {
         assertAll(
             // The property has to be named fbetaScores: Jackson's legacy bean naming would mangle a getFScores() getter to "fscores" while
             // jackson-module-kotlin reports the constructor parameter as "fScores", and the mismatch would be silently dropped on read.
-            Executable { assertTrue(tree.has("fbetaScores")) { "expected an fbetaScores property in $tree" } },
-            Executable {
+            { assertTrue(tree.has("fbetaScores")) { "expected an fbetaScores property in $tree" } },
+            {
                 assertEquals(
                     listOf("0.5", "1.0", "2.0"),
                     tree
@@ -35,15 +35,15 @@ class ResultSerializationTest {
                         .toList()
                 )
             },
-            Executable { assertEquals(0.5714285714285715, tree.get("fbetaScores").get("1.0").doubleValue(), 1e-12) },
-            Executable { assertEquals(0.5714285714285715, tree.get("f1").doubleValue(), 1e-12) },
-            Executable { assertTrue(tree.has("confusionMatrix")) { "expected a derived confusionMatrix property in $tree" } },
-            Executable { assertEquals(2, tree.get("confusionMatrix").get("truePositives").intValue()) },
-            Executable { assertEquals(1, tree.get("confusionMatrix").get("falsePositives").intValue()) },
-            Executable { assertEquals(2, tree.get("confusionMatrix").get("falseNegatives").intValue()) },
-            Executable { assertEquals(5, tree.get("confusionMatrix").get("trueNegatives").intValue()) },
+            { assertEquals(0.5714285714285715, tree.get("fbetaScores").get("1.0").doubleValue(), 1e-12) },
+            { assertEquals(0.5714285714285715, tree.get("f1").doubleValue(), 1e-12) },
+            { assertTrue(tree.has("confusionMatrix")) { "expected a derived confusionMatrix property in $tree" } },
+            { assertEquals(2, tree.get("confusionMatrix").get("truePositives").intValue()) },
+            { assertEquals(1, tree.get("confusionMatrix").get("falsePositives").intValue()) },
+            { assertEquals(2, tree.get("confusionMatrix").get("falseNegatives").intValue()) },
+            { assertEquals(5, tree.get("confusionMatrix").get("trueNegatives").intValue()) },
             // total() is a function, so the confusion matrix serializes as exactly its four counts and stays readable by a strict mapper.
-            Executable {
+            {
                 assertEquals(
                     listOf("truePositives", "falsePositives", "falseNegatives", "trueNegatives"),
                     tree
@@ -70,9 +70,9 @@ class ResultSerializationTest {
         val original = calculator.calculateMetrics(setOf("a", "b"), setOf("a", "c"), 8, listOf(0.1, 0.5, 2.5))
         val roundTripped: SingleClassificationResult<String> = mapper.readValue(mapper.writeValueAsString(original))
         assertAll(
-            Executable { assertEquals(setOf(0.1, 0.5, 1.0, 2.5), roundTripped.fbetaScores.keys) },
-            Executable { assertEquals(original.fbetaScores.getValue(0.1), roundTripped.fbetaScores.getValue(0.1)) },
-            Executable { assertEquals(original.fbetaScores.getValue(2.5), roundTripped.fbetaScores.getValue(2.5)) }
+            { assertEquals(setOf(0.1, 0.5, 1.0, 2.5), roundTripped.fbetaScores.keys) },
+            { assertEquals(original.fbetaScores.getValue(0.1), roundTripped.fbetaScores.getValue(0.1)) },
+            { assertEquals(original.fbetaScores.getValue(2.5), roundTripped.fbetaScores.getValue(2.5)) }
         )
     }
 
@@ -98,13 +98,13 @@ class ResultSerializationTest {
             """.trimIndent()
         val parsed: SingleClassificationResult<String> = mapper.readValue(legacy)
         assertAll(
-            Executable { assertEquals(mapOf(1.0 to 0.5714285714285715), parsed.fbetaScores) },
-            Executable { assertEquals(0.5714285714285715, parsed.f1) },
-            Executable { assertEquals(2, parsed.confusionMatrix.truePositives) },
-            Executable { assertEquals(5, parsed.confusionMatrix.trueNegatives) },
-            Executable { assertEquals(10, parsed.confusionMatrix.total()) },
+            { assertEquals(mapOf(1.0 to 0.5714285714285715), parsed.fbetaScores) },
+            { assertEquals(0.5714285714285715, parsed.f1) },
+            { assertEquals(2, parsed.confusionMatrix.truePositives) },
+            { assertEquals(5, parsed.confusionMatrix.trueNegatives) },
+            { assertEquals(10, parsed.confusionMatrix.total()) },
             // Not-requested betas are still available because precision and recall are known.
-            Executable { assertEquals(0.5263157894736842, parsed.fbeta(2.0), 1e-12) }
+            { assertEquals(0.5263157894736842, parsed.fbeta(2.0), 1e-12) }
         )
     }
 
@@ -165,8 +165,8 @@ class ResultSerializationTest {
         val json = mapper.writeValueAsString(aggregation)
         val tree = mapper.readTree(json)
         assertAll(
-            Executable { assertTrue(tree.isObject) { "the aggregation must serialize as an object, not an array" } },
-            Executable {
+            { assertTrue(tree.isObject) { "the aggregation must serialize as an object, not an array" } },
+            {
                 // The creator properties keep their declaration order; the derived ones (confusionMatrix, betas) may appear in any order.
                 val fields = tree.fieldNames().asSequence().toList()
                 assertAll(
@@ -179,12 +179,12 @@ class ResultSerializationTest {
                     Executable { assertEquals(setOf("confusionMatrix", "betas"), fields.drop(5).toSet()) }
                 )
             },
-            Executable { assertEquals(listOf(2, 3), tree.get("weights").map { it.intValue() }) },
-            Executable { assertEquals(listOf(1.0, 2.0), tree.get("betas").map { it.doubleValue() }) },
-            Executable { assertEquals("MACRO_AVERAGE", tree.get("macroAverage").get("type").textValue()) },
-            Executable { assertTrue(tree.get("macroAverage").has("f1")) { "each aggregation must expose f1" } },
-            Executable { assertTrue(tree.get("macroAverage").has("fbetaScores")) { "each aggregation must expose fbetaScores" } },
-            Executable {
+            { assertEquals(listOf(2, 3), tree.get("weights").map { it.intValue() }) },
+            { assertEquals(listOf(1.0, 2.0), tree.get("betas").map { it.doubleValue() }) },
+            { assertEquals("MACRO_AVERAGE", tree.get("macroAverage").get("type").textValue()) },
+            { assertTrue(tree.get("macroAverage").has("f1")) { "each aggregation must expose f1" } },
+            { assertTrue(tree.get("macroAverage").has("fbetaScores")) { "each aggregation must expose fbetaScores" } },
+            {
                 assertEquals(
                     4,
                     tree
@@ -195,10 +195,10 @@ class ResultSerializationTest {
                 )
             },
             // The inputs are stored once for the whole aggregation instead of once per aggregation type.
-            Executable { assertEquals(1, Regex("\"singleResults\"").findAll(json).count()) },
+            { assertEquals(1, Regex("\"singleResults\"").findAll(json).count()) },
             // Functions must not leak into the JSON.
-            Executable { assertTrue(!tree.has("asList")) { "asList() must not be serialized" } },
-            Executable { assertTrue(!tree.has("truePositives")) { "the element unions must not be serialized" } }
+            { assertTrue(!tree.has("asList")) { "asList() must not be serialized" } },
+            { assertTrue(!tree.has("truePositives")) { "the element unions must not be serialized" } }
         )
     }
 }

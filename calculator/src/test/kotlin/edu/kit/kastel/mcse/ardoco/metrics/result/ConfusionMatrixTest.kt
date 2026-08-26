@@ -11,9 +11,9 @@ class ConfusionMatrixTest {
     @Test
     fun totalTest() {
         assertAll(
-            Executable { assertEquals(21, ConfusionMatrix(6, 1, 2, 12).total()) },
-            Executable { assertEquals(0, ConfusionMatrix(0, 0, 0, 0).total()) },
-            Executable { assertNull(ConfusionMatrix(6, 1, 2, null).total()) }
+            { assertEquals(21, ConfusionMatrix(6, 1, 2, 12).total()) },
+            { assertEquals(0, ConfusionMatrix(0, 0, 0, 0).total()) },
+            { assertNull(ConfusionMatrix(6, 1, 2, null).total()) }
         )
     }
 
@@ -27,10 +27,10 @@ class ConfusionMatrixTest {
     fun plusWithoutTrueNegativesTest() {
         // The number of true negatives is only known if it is known for both operands.
         assertAll(
-            Executable { assertNull((ConfusionMatrix(6, 1, 2, 12) + ConfusionMatrix(4, 3, 5, null)).trueNegatives) },
-            Executable { assertNull((ConfusionMatrix(6, 1, 2, null) + ConfusionMatrix(4, 3, 5, 8)).trueNegatives) },
-            Executable { assertNull((ConfusionMatrix(6, 1, 2, null) + ConfusionMatrix(4, 3, 5, null)).trueNegatives) },
-            Executable { assertEquals(ConfusionMatrix(10, 4, 7, null), ConfusionMatrix(6, 1, 2, null) + ConfusionMatrix(4, 3, 5, null)) }
+            { assertNull((ConfusionMatrix(6, 1, 2, 12) + ConfusionMatrix(4, 3, 5, null)).trueNegatives) },
+            { assertNull((ConfusionMatrix(6, 1, 2, null) + ConfusionMatrix(4, 3, 5, 8)).trueNegatives) },
+            { assertNull((ConfusionMatrix(6, 1, 2, null) + ConfusionMatrix(4, 3, 5, null)).trueNegatives) },
+            { assertEquals(ConfusionMatrix(10, 4, 7, null), ConfusionMatrix(6, 1, 2, null) + ConfusionMatrix(4, 3, 5, null)) }
         )
     }
 
@@ -40,18 +40,18 @@ class ConfusionMatrixTest {
         val b = ConfusionMatrix(4, 3, 5, 8)
         val c = ConfusionMatrix(1, 1, 1, 1)
         assertAll(
-            Executable { assertEquals(a + b, b + a) },
-            Executable { assertEquals((a + b) + c, a + (b + c)) }
+            { assertEquals(a + b, b + a) },
+            { assertEquals((a + b) + c, a + (b + c)) }
         )
     }
 
     @Test
     fun negativeCountsAreRejectedTest() {
         assertAll(
-            Executable { assertThrows<IllegalArgumentException> { ConfusionMatrix(-1, 0, 0, 0) } },
-            Executable { assertThrows<IllegalArgumentException> { ConfusionMatrix(0, -1, 0, 0) } },
-            Executable { assertThrows<IllegalArgumentException> { ConfusionMatrix(0, 0, -1, 0) } },
-            Executable { assertThrows<IllegalArgumentException> { ConfusionMatrix(0, 0, 0, -1) } }
+            { assertThrows<IllegalArgumentException> { ConfusionMatrix(-1, 0, 0, 0) } },
+            { assertThrows<IllegalArgumentException> { ConfusionMatrix(0, -1, 0, 0) } },
+            { assertThrows<IllegalArgumentException> { ConfusionMatrix(0, 0, -1, 0) } },
+            { assertThrows<IllegalArgumentException> { ConfusionMatrix(0, 0, 0, -1) } }
         )
     }
 }

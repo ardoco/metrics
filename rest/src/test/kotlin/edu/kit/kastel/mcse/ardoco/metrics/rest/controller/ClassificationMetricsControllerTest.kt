@@ -216,15 +216,15 @@ class ClassificationMetricsControllerTest {
         // swallowed by the catch-all and reported as 500.
         assertAll(
             // Unknown path.
-            Executable { mockMvc.perform(get("/does-not-exist")).andExpect(status().isNotFound) },
+            { mockMvc.perform(get("/does-not-exist")).andExpect(status().isNotFound) },
             // Unsupported method on a known path.
-            Executable { mockMvc.perform(delete("/classification-metrics")).andExpect(status().isMethodNotAllowed) },
+            { mockMvc.perform(delete("/classification-metrics")).andExpect(status().isMethodNotAllowed) },
             // Malformed request body.
-            Executable {
+            {
                 postJson("/classification-metrics", "{ not json }").andExpect(status().isBadRequest)
             },
             // A required property missing from the body.
-            Executable {
+            {
                 postJson("/classification-metrics", """{ "classification": ["a"] }""").andExpect(status().isBadRequest)
             }
         )
@@ -234,13 +234,13 @@ class ClassificationMetricsControllerTest {
     fun rankMetricsAreGoneTest() {
         val mappings = handlerMapping.handlerMethods.keys.map { it.toString() }
         assertAll(
-            Executable {
+            {
                 assertTrue(mappings.none { it.contains("rank", ignoreCase = true) }) { "found a rank mapping in $mappings" }
             },
-            Executable {
+            {
                 assertTrue(mappings.any { it.contains("/classification-metrics") }) { "expected the classification mapping in $mappings" }
             },
-            Executable {
+            {
                 assertThrows<ClassNotFoundException> {
                     Class.forName("edu.kit.kastel.mcse.ardoco.metrics.rest.controller.RankMetricsController")
                 }

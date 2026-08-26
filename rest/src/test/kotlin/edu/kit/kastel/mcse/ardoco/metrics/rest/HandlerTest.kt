@@ -14,8 +14,8 @@ class HandlerTest {
     fun illegalArgumentBecomesBadRequestTest() {
         val response = handler.handleIllegalArgument(IllegalArgumentException("Beta must be greater than 0"), null, null)
         assertAll(
-            Executable { assertEquals(HttpStatus.BAD_REQUEST, response.statusCode) },
-            Executable { assertEquals("Beta must be greater than 0", response.body) }
+            { assertEquals(HttpStatus.BAD_REQUEST, response.statusCode) },
+            { assertEquals("Beta must be greater than 0", response.body) }
         )
     }
 
@@ -23,8 +23,8 @@ class HandlerTest {
     fun nullPointerBecomesBadRequestTest() {
         val response = handler.handle(NullPointerException(), null, null)
         assertAll(
-            Executable { assertEquals(HttpStatus.BAD_REQUEST, response.statusCode) },
-            Executable { assertNull(response.body) }
+            { assertEquals(HttpStatus.BAD_REQUEST, response.statusCode) },
+            { assertNull(response.body) }
         )
     }
 
@@ -34,8 +34,8 @@ class HandlerTest {
         // extends ResponseEntityExceptionHandler.
         val response = handler.handle(IllegalStateException("boom"), null, null)
         assertAll(
-            Executable { assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.statusCode) },
-            Executable { assertEquals("boom", response.body) }
+            { assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.statusCode) },
+            { assertEquals("boom", response.body) }
         )
     }
 
@@ -43,8 +43,8 @@ class HandlerTest {
     fun nullExceptionIsToleratedTest() {
         val response = handler.handle(null, null, null)
         assertAll(
-            Executable { assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.statusCode) },
-            Executable { assertNull(response.body) }
+            { assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.statusCode) },
+            { assertNull(response.body) }
         )
     }
 }

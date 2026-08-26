@@ -41,8 +41,8 @@ class OpenApiDocumentationTest {
     @Test
     fun swaggerUiIsServedTest() {
         assertAll(
-            Executable { mockMvc.perform(get("/swagger-ui/index.html")).andExpect(status().isOk) },
-            Executable { mockMvc.perform(get("/v3/api-docs")).andExpect(status().isOk) }
+            { mockMvc.perform(get("/swagger-ui/index.html")).andExpect(status().isOk) },
+            { mockMvc.perform(get("/v3/api-docs")).andExpect(status().isOk) }
         )
     }
 
@@ -50,9 +50,9 @@ class OpenApiDocumentationTest {
     fun apiInfoIsPresentTest() {
         val info = apiDocs.get("info")
         assertAll(
-            Executable { assertEquals("ARDoCo: Metrics", info.get("title").textValue()) },
-            Executable { assertTrue(info.get("description").textValue().isNotBlank()) },
-            Executable {
+            { assertEquals("ARDoCo: Metrics", info.get("title").textValue()) },
+            { assertTrue(info.get("description").textValue().isNotBlank()) },
+            {
                 assertTrue(
                     info
                         .get("license")
@@ -61,7 +61,7 @@ class OpenApiDocumentationTest {
                         .isNotBlank()
                 )
             },
-            Executable {
+            {
                 assertTrue(
                     apiDocs
                         .get("externalDocs")
@@ -117,21 +117,21 @@ class OpenApiDocumentationTest {
     fun resultSchemasCarryAnExampleTest() {
         val schemas = apiDocs.get("components").get("schemas")
         assertAll(
-            Executable {
+            {
                 val example = schemas.get("SingleClassificationResultString").get("example")
                 assertAll(
-                    Executable { assertTrue(example != null) { "the single result schema needs an example" } },
-                    Executable { assertTrue(example.has("fbetaScores")) { "the example must show the F-beta scores" } },
-                    Executable { assertTrue(example.has("confusionMatrix")) { "the example must show the confusion matrix" } }
+                    { assertTrue(example != null) { "the single result schema needs an example" } },
+                    { assertTrue(example.has("fbetaScores")) { "the example must show the F-beta scores" } },
+                    { assertTrue(example.has("confusionMatrix")) { "the example must show the confusion matrix" } }
                 )
             },
-            Executable {
+            {
                 val example = schemas.get("ClassificationAggregationResultString").get("example")
                 assertAll(
-                    Executable { assertTrue(example != null) { "the aggregation schema needs an example" } },
-                    Executable { assertTrue(example.has("macroAverage")) { "the example must show the macro average" } },
-                    Executable { assertTrue(example.has("weightedAverage")) { "the example must show the weighted average" } },
-                    Executable { assertTrue(example.has("microAverage")) { "the example must show the micro average" } }
+                    { assertTrue(example != null) { "the aggregation schema needs an example" } },
+                    { assertTrue(example.has("macroAverage")) { "the example must show the macro average" } },
+                    { assertTrue(example.has("weightedAverage")) { "the example must show the weighted average" } },
+                    { assertTrue(example.has("microAverage")) { "the example must show the micro average" } }
                 )
             }
         )
@@ -169,8 +169,8 @@ class OpenApiDocumentationTest {
                                 .get("\$ref")
                                 .textValue()
                         assertAll(
-                            Executable { assertTrue(ok.get("description").textValue().isNotBlank()) { "$path $method needs a 200 description" } },
-                            Executable {
+                            { assertTrue(ok.get("description").textValue().isNotBlank()) { "$path $method needs a 200 description" } },
+                            {
                                 assertTrue(
                                     schema.endsWith("String")
                                 ) { "$path $method should keep the generic result schema, got $schema" }
@@ -192,8 +192,8 @@ class OpenApiDocumentationTest {
     fun healthEndpointIsDocumentedTest() {
         val operation = apiDocs.get("paths").get("/classification-metrics").get("get")
         assertAll(
-            Executable { assertTrue(operation.get("summary").textValue().isNotBlank()) },
-            Executable {
+            { assertTrue(operation.get("summary").textValue().isNotBlank()) },
+            {
                 assertTrue(
                     operation
                         .get("responses")
@@ -294,10 +294,10 @@ class OpenApiDocumentationTest {
                 .asSequence()
                 .toList()
         assertAll(
-            Executable { assertTrue(!names.contains("SingleClassificationResult")) { "raw-typed duplicate schema in $names" } },
-            Executable { assertTrue(!names.contains("SingleClassificationResultObject")) { "object-typed duplicate schema in $names" } },
-            Executable { assertTrue(!names.contains("ClassificationAggregationResult")) { "raw-typed duplicate schema in $names" } },
-            Executable { assertEquals(names.size, names.toSet().size) }
+            { assertTrue(!names.contains("SingleClassificationResult")) { "raw-typed duplicate schema in $names" } },
+            { assertTrue(!names.contains("SingleClassificationResultObject")) { "object-typed duplicate schema in $names" } },
+            { assertTrue(!names.contains("ClassificationAggregationResult")) { "raw-typed duplicate schema in $names" } },
+            { assertEquals(names.size, names.toSet().size) }
         )
     }
 }

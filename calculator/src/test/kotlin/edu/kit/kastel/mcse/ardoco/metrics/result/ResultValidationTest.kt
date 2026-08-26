@@ -42,18 +42,18 @@ class ResultValidationTest {
     @Test
     fun singleResultRejectsNegativeTrueNegativesTest() {
         assertAll(
-            Executable { assertThrows<IllegalArgumentException> { single(trueNegatives = -1) } },
-            Executable { assertDoesNotThrow { single(trueNegatives = 0) } },
-            Executable { assertDoesNotThrow { single(trueNegatives = null) } }
+            { assertThrows<IllegalArgumentException> { single(trueNegatives = -1) } },
+            { assertDoesNotThrow { single(trueNegatives = 0) } },
+            { assertDoesNotThrow { single(trueNegatives = null) } }
         )
     }
 
     @Test
     fun singleResultRejectsFbetaScoresWithoutF1Test() {
         assertAll(
-            Executable { assertThrows<IllegalArgumentException> { single(fbetaScores = emptyMap()) } },
-            Executable { assertThrows<IllegalArgumentException> { single(fbetaScores = mapOf(2.0 to 0.5)) } },
-            Executable { assertDoesNotThrow { single(fbetaScores = mapOf(1.0 to 0.5, 2.0 to 0.5)) } }
+            { assertThrows<IllegalArgumentException> { single(fbetaScores = emptyMap()) } },
+            { assertThrows<IllegalArgumentException> { single(fbetaScores = mapOf(2.0 to 0.5)) } },
+            { assertDoesNotThrow { single(fbetaScores = mapOf(1.0 to 0.5, 2.0 to 0.5)) } }
         )
     }
 
@@ -62,10 +62,10 @@ class ResultValidationTest {
         // ClassificationResult guarantees that f1 is the F-beta score for beta 1.0; without this check the two accessors could disagree and
         // aggregation, which reads the map, would silently use the other value.
         assertAll(
-            Executable { assertThrows<IllegalArgumentException> { single(fbetaScores = mapOf(1.0 to 0.25)) } },
-            Executable { assertThrows<IllegalArgumentException> { single(fbetaScores = mapOf(1.0 to 0.25, 2.0 to 0.5)) } },
-            Executable { assertDoesNotThrow { single(fbetaScores = mapOf(1.0 to 0.5, 2.0 to 0.25)) } },
-            Executable { assertEquals(single().f1, single().fbeta(1.0)) }
+            { assertThrows<IllegalArgumentException> { single(fbetaScores = mapOf(1.0 to 0.25)) } },
+            { assertThrows<IllegalArgumentException> { single(fbetaScores = mapOf(1.0 to 0.25, 2.0 to 0.5)) } },
+            { assertDoesNotThrow { single(fbetaScores = mapOf(1.0 to 0.5, 2.0 to 0.25)) } },
+            { assertEquals(single().f1, single().fbeta(1.0)) }
         )
     }
 
@@ -93,7 +93,7 @@ class ResultValidationTest {
     fun aggregationResultRejectsUnusableWeightsTest() {
         val aggregation = calculator.calculateAverages(listOf(calculator.calculateMetrics(setOf("a"), setOf("a"), 4)))
         assertAll(
-            Executable {
+            {
                 assertThrows<IllegalArgumentException> {
                     ClassificationAggregationResult(
                         aggregation.singleResults,
@@ -104,7 +104,7 @@ class ResultValidationTest {
                     )
                 }
             },
-            Executable {
+            {
                 assertThrows<IllegalArgumentException> {
                     ClassificationAggregationResult(
                         aggregation.singleResults,
@@ -122,13 +122,13 @@ class ResultValidationTest {
     fun singleResultRejectsConfusionMatrixThatDisagreesWithTheElementsTest() {
         assertAll(
             // Wrong counts.
-            Executable { assertThrows<IllegalArgumentException> { single(confusionMatrix = ConfusionMatrix(9, 1, 1, 5)) } },
+            { assertThrows<IllegalArgumentException> { single(confusionMatrix = ConfusionMatrix(9, 1, 1, 5)) } },
             // Right counts but a true negative count that contradicts the trueNegatives field.
-            Executable { assertThrows<IllegalArgumentException> { single(confusionMatrix = ConfusionMatrix(2, 1, 1, 6)) } },
-            Executable { assertThrows<IllegalArgumentException> { single(trueNegatives = null, confusionMatrix = ConfusionMatrix(2, 1, 1, 5)) } },
-            Executable { assertDoesNotThrow { single(confusionMatrix = ConfusionMatrix(2, 1, 1, 5)) } },
+            { assertThrows<IllegalArgumentException> { single(confusionMatrix = ConfusionMatrix(2, 1, 1, 6)) } },
+            { assertThrows<IllegalArgumentException> { single(trueNegatives = null, confusionMatrix = ConfusionMatrix(2, 1, 1, 5)) } },
+            { assertDoesNotThrow { single(confusionMatrix = ConfusionMatrix(2, 1, 1, 5)) } },
             // The default derives it from the elements, so it always agrees.
-            Executable { assertEquals(ConfusionMatrix(2, 1, 1, 5), single().confusionMatrix) }
+            { assertEquals(ConfusionMatrix(2, 1, 1, 5), single().confusionMatrix) }
         )
     }
 
@@ -136,12 +136,12 @@ class ResultValidationTest {
     fun aggregatedResultRejectsFbetaScoresWithoutF1Test() {
         val matrix = ConfusionMatrix(2, 1, 1, 5)
         assertAll(
-            Executable {
+            {
                 assertThrows<IllegalArgumentException> {
                     AggregatedClassificationResult(AggregationType.MACRO_AVERAGE, matrix, 0.5, 0.5, 0.5, emptyMap(), null, null, null, null, null)
                 }
             },
-            Executable {
+            {
                 assertDoesNotThrow {
                     AggregatedClassificationResult(
                         AggregationType.MACRO_AVERAGE,
@@ -158,7 +158,7 @@ class ResultValidationTest {
                     )
                 }
             },
-            Executable {
+            {
                 // The default keeps f1 and the F-beta scores in agreement.
                 val result =
                     AggregatedClassificationResult(
@@ -195,9 +195,9 @@ class ResultValidationTest {
     @Test
     fun metricSpreadRejectsEmptyValuesTest() {
         assertAll(
-            Executable { assertThrows<IllegalArgumentException> { MetricSpread.of(emptyList()) } },
-            Executable { assertEquals(MetricSpread(0.5, 0.5, 0.5, 0.0), MetricSpread.of(listOf(0.5))) },
-            Executable { assertEquals(MetricSpread(0.0, 1.0, 0.5, 0.5), MetricSpread.of(listOf(0.0, 1.0))) }
+            { assertThrows<IllegalArgumentException> { MetricSpread.of(emptyList()) } },
+            { assertEquals(MetricSpread(0.5, 0.5, 0.5, 0.0), MetricSpread.of(listOf(0.5))) },
+            { assertEquals(MetricSpread(0.0, 1.0, 0.5, 0.5), MetricSpread.of(listOf(0.0, 1.0))) }
         )
     }
 }

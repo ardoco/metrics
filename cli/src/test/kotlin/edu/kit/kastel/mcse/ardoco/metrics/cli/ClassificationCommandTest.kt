@@ -34,9 +34,9 @@ class ClassificationCommandTest {
         val none = ClassificationCommand()
         CommandLine(none).parseArgs("-c", "c.txt", "-g", "g.txt")
         assertAll(
-            Executable { assertEquals(listOf(0.5, 2.0), commaSeparated.betas) },
-            Executable { assertEquals(listOf(0.5, 2.0), repeated.betas) },
-            Executable { assertEquals(emptyList<Double>(), none.betas) }
+            { assertEquals(listOf(0.5, 2.0), commaSeparated.betas) },
+            { assertEquals(listOf(0.5, 2.0), repeated.betas) },
+            { assertEquals(emptyList<Double>(), none.betas) }
         )
     }
 
@@ -65,9 +65,9 @@ class ClassificationCommandTest {
         val written: SingleClassificationResult<String> = mapper.readValue(output.toFile())
         val expected = calculator.calculateMetrics(setOf("a", "b", "c"), setOf("a", "b", "d", "e"), 10, listOf(0.5, 2.0))
         assertAll(
-            Executable { assertEquals(0, exitCode) },
-            Executable { assertEquals(expected, written) },
-            Executable { assertEquals(setOf(0.5, 1.0, 2.0), written.fbetaScores.keys) }
+            { assertEquals(0, exitCode) },
+            { assertEquals(expected, written) },
+            { assertEquals(setOf(0.5, 1.0, 2.0), written.fbetaScores.keys) }
         )
     }
 
@@ -85,10 +85,10 @@ class ClassificationCommandTest {
 
         val written: SingleClassificationResult<String> = mapper.readValue(output.toFile())
         assertAll(
-            Executable { assertEquals(0, exitCode) },
-            Executable { assertEquals(setOf(1.0), written.fbetaScores.keys) },
-            Executable { assertEquals(null, written.trueNegatives) },
-            Executable { assertEquals(null, written.accuracy) }
+            { assertEquals(0, exitCode) },
+            { assertEquals(setOf(1.0), written.fbetaScores.keys) },
+            { assertEquals(null, written.trueNegatives) },
+            { assertEquals(null, written.accuracy) }
         )
     }
 
@@ -106,10 +106,10 @@ class ClassificationCommandTest {
 
         val written: SingleClassificationResult<String> = mapper.readValue(output.toFile())
         assertAll(
-            Executable { assertEquals(0, exitCode) },
-            Executable { assertEquals(setOf("a", "b"), written.truePositives) },
-            Executable { assertEquals(setOf("c"), written.falsePositives) },
-            Executable { assertEquals(setOf("d", "e"), written.falseNegatives) }
+            { assertEquals(0, exitCode) },
+            { assertEquals(setOf("a", "b"), written.truePositives) },
+            { assertEquals(setOf("c"), written.falsePositives) },
+            { assertEquals(setOf("d", "e"), written.falseNegatives) }
         )
     }
 
@@ -129,10 +129,10 @@ class ClassificationCommandTest {
         val aggregationExit = CommandLine(AggregationClassificationCommand()).execute("-d", resultsDir.toString())
 
         assertAll(
-            Executable { assertEquals(0, classificationExit) },
-            Executable { assertEquals(0, aggregationExit) },
+            { assertEquals(0, classificationExit) },
+            { assertEquals(0, aggregationExit) },
             // Nothing is written when -o is omitted.
-            Executable { assertEquals(1, resultsDir.toFile().listFiles()!!.size) }
+            { assertEquals(1, resultsDir.toFile().listFiles()!!.size) }
         )
     }
 
@@ -150,10 +150,10 @@ class ClassificationCommandTest {
 
         val written: SingleClassificationResult<String> = mapper.readValue(output.toFile())
         assertAll(
-            Executable { assertEquals(0, exitCode) },
-            Executable { assertEquals(setOf("a"), written.truePositives) },
-            Executable { assertEquals(setOf("b"), written.falsePositives) },
-            Executable { assertEquals(setOf("c"), written.falseNegatives) }
+            { assertEquals(0, exitCode) },
+            { assertEquals(setOf("a"), written.truePositives) },
+            { assertEquals(setOf("b"), written.falsePositives) },
+            { assertEquals(setOf("c"), written.falseNegatives) }
         )
     }
 
@@ -172,11 +172,11 @@ class ClassificationCommandTest {
 
         assertAll(
             // 5 elements are classified or expected, so 4 would imply a negative number of true negatives.
-            Executable { assertEquals(1, run("-s", "4")) },
-            Executable { assertEquals(1, run("-s=-1")) },
-            Executable { assertEquals(0, run("-s", "5")) },
-            Executable { assertEquals(0, run()) },
-            Executable { assertEquals(1, run("-b", "0")) }
+            { assertEquals(1, run("-s", "4")) },
+            { assertEquals(1, run("-s=-1")) },
+            { assertEquals(0, run("-s", "5")) },
+            { assertEquals(0, run()) },
+            { assertEquals(1, run("-b", "0")) }
         )
     }
 
@@ -207,19 +207,19 @@ class ClassificationCommandTest {
         val expected = calculator.calculateAverages(listOf(first, second))
         val tree = mapper.readTree(output.toFile())
         assertAll(
-            Executable { assertEquals(0, exitCode) },
-            Executable { assertEquals(expected.macroAverage.precision, tree.get("macroAverage").get("precision").doubleValue(), 1e-12) },
-            Executable { assertEquals(expected.weightedAverage.f1, tree.get("weightedAverage").get("f1").doubleValue(), 1e-12) },
-            Executable { assertEquals(expected.microAverage.recall, tree.get("microAverage").get("recall").doubleValue(), 1e-12) },
-            Executable {
+            { assertEquals(0, exitCode) },
+            { assertEquals(expected.macroAverage.precision, tree.get("macroAverage").get("precision").doubleValue(), 1e-12) },
+            { assertEquals(expected.weightedAverage.f1, tree.get("weightedAverage").get("f1").doubleValue(), 1e-12) },
+            { assertEquals(expected.microAverage.recall, tree.get("microAverage").get("recall").doubleValue(), 1e-12) },
+            {
                 assertEquals(
                     expected.confusionMatrix.truePositives,
                     tree.get("confusionMatrix").get("truePositives").intValue()
                 )
             },
-            Executable { assertEquals(listOf(1.0, 2.0), tree.get("betas").map { it.doubleValue() }) },
-            Executable { assertEquals(expected.weights, tree.get("weights").map { it.intValue() }) },
-            Executable { assertEquals(2, tree.get("singleResults").size()) }
+            { assertEquals(listOf(1.0, 2.0), tree.get("betas").map { it.doubleValue() }) },
+            { assertEquals(expected.weights, tree.get("weights").map { it.intValue() }) },
+            { assertEquals(2, tree.get("singleResults").size()) }
         )
     }
 
@@ -243,10 +243,10 @@ class ClassificationCommandTest {
 
         val tree = mapper.readTree(output.toFile())
         assertAll(
-            Executable { assertEquals(0, exitCode) },
+            { assertEquals(0, exitCode) },
             // The default weight is the size of the ground truth, so the weights reveal the order the files were read in: a, b, c.
-            Executable { assertEquals(listOf(2, 4, 6), tree.get("weights").map { it.intValue() }) },
-            Executable {
+            { assertEquals(listOf(2, 4, 6), tree.get("weights").map { it.intValue() }) },
+            {
                 assertEquals(
                     listOf(2, 4, 6),
                     tree.get("singleResults").map { it.get("confusionMatrix").get("truePositives").intValue() }
@@ -287,12 +287,12 @@ class ClassificationCommandTest {
 
         val tree = mapper.readTree(output.toFile())
         assertAll(
-            Executable { assertEquals(0, exitCode) },
+            { assertEquals(0, exitCode) },
             // The beta missing from the legacy file is recalculated from its precision and recall.
-            Executable { assertEquals(listOf(1.0, 2.0), tree.get("betas").map { it.doubleValue() }) },
-            Executable { assertEquals(2, tree.get("singleResults").size()) },
-            Executable { assertEquals(3, tree.get("confusionMatrix").get("truePositives").intValue()) },
-            Executable { assertEquals(13, tree.get("confusionMatrix").get("trueNegatives").intValue()) }
+            { assertEquals(listOf(1.0, 2.0), tree.get("betas").map { it.doubleValue() }) },
+            { assertEquals(2, tree.get("singleResults").size()) },
+            { assertEquals(3, tree.get("confusionMatrix").get("truePositives").intValue()) },
+            { assertEquals(13, tree.get("confusionMatrix").get("trueNegatives").intValue()) }
         )
     }
 
