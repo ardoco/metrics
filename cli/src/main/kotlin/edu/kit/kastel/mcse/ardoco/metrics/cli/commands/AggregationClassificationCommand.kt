@@ -40,11 +40,11 @@ class AggregationClassificationCommand : Callable<Int> {
             return 1
         }
         val classificationMetrics = ClassificationMetricsCalculator.Instance
-        val average = classificationMetrics.calculateAverages(results)
-        average.forEach { it.prettyPrint() }
+        val aggregation = classificationMetrics.calculateAverages(results)
+        aggregation.prettyPrint()
         outputFile?.let {
             val outputFileObj = java.io.File(it)
-            oom.writeValue(outputFileObj, average)
+            oom.writeValue(outputFileObj, aggregation)
         }
         return 0
     }

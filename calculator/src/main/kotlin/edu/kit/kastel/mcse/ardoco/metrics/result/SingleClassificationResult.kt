@@ -1,6 +1,6 @@
 package edu.kit.kastel.mcse.ardoco.metrics.result
 
-import edu.kit.kastel.mcse.ardoco.metrics.result.ClassificationResult.Companion.logger
+import edu.kit.kastel.mcse.ardoco.metrics.calculation.calculateFBeta
 
 /**
  * Represents the result of metrics for one classification task.
@@ -13,11 +13,12 @@ data class SingleClassificationResult<T>(
     val falsePositives: Set<T>,
     /** The false negatives */
     val falseNegatives: Set<T>,
-    /** The true negatives. If not available, this is null. */
+    /** The number of true negatives. If not available, this is null. */
     val trueNegatives: Int?,
     override val precision: Double,
     override val recall: Double,
     override val f1: Double,
+    override val fbetaScores: Map<Double, Double> = mapOf(1.0 to f1),
     // Only if tn is available
     override val accuracy: Double?,
     override val specificity: Double?,
@@ -25,24 +26,22 @@ data class SingleClassificationResult<T>(
     override val phiCoefficientMax: Double?,
     override val phiOverPhiMax: Double?
 ) : ClassificationResult {
-    override fun prettyPrint() {
-        logger.info("True Positives: ${truePositives.size}")
-        logger.info("False Positives: ${falsePositives.size}")
-        logger.info("False Negatives: ${falseNegatives.size}")
-        logger.info("True Negatives: ${trueNegatives ?: "N/A"}")
-        super.prettyPrint()
+    init {
+        require(trueNegatives == null || trueNegatives >= 0) { "The number of true negatives must not be negative but was $trueNegatives" }
+        require(fbetaScores.containsKey(1.0)) { "The F-beta scores must contain the F1-score (beta 1.0)" }
     }
 
-    /** Calculates the F-beta score of the classification. */
-    fun fBeta(beta: Double): Double {
-        if (beta <= 0.0) {
-            error("Beta must be greater than 0 for F-beta score.")
-        }
+    /** The confusion matrix of this result, derived from the classified elements. */
+    override val confusionMatrix: ConfusionMatrix
+        get() = ConfusionMatrix(truePositives.size, falsePositives.size, falseNegatives.size, trueNegatives)
 
-        if (beta == 1.0) return f1
-
-        val betaSquared = beta * beta
-        val result = (1 + betaSquared) * (precision * recall) / ((betaSquared * precision) + recall)
-        return if (result.isNaN()) 0.0 else result
-    }
+    /**
+     * Returns the F-beta score for [beta]. If it was not calculated for this result, it is recomputed from [precision] and [recall], which yields the
+     * exact same value.
+     *
+     * @param beta the weight of the recall relative to the precision; must be finite and greater than 0
+     * @return the F-beta score
+     * @throws IllegalArgumentException if [beta] is not a finite number greater than 0
+     */
+    fun fbeta(beta: Double): Double = fbetaScores[beta] ?: calculateFBeta(precision, recall, beta)
 }

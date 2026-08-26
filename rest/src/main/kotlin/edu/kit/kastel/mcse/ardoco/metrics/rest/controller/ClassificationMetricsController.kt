@@ -1,7 +1,7 @@
 package edu.kit.kastel.mcse.ardoco.metrics.rest.controller
 
 import edu.kit.kastel.mcse.ardoco.metrics.ClassificationMetricsCalculator
-import edu.kit.kastel.mcse.ardoco.metrics.result.AggregatedClassificationResult
+import edu.kit.kastel.mcse.ardoco.metrics.result.ClassificationAggregationResult
 import edu.kit.kastel.mcse.ardoco.metrics.result.SingleClassificationResult
 import io.swagger.v3.oas.annotations.Operation
 import org.springframework.web.bind.annotation.GetMapping
@@ -31,7 +31,7 @@ class ClassificationMetricsController {
     @PostMapping("/average")
     fun calculateMultipleClassificationMetrics(
         @RequestBody body: AverageClassificationMetricsRequest
-    ): AverageClassificationMetricsResponse {
+    ): ClassificationAggregationResult<String> {
         val classificationMetricsCalculator = ClassificationMetricsCalculator.Instance
 
         val requests = body.classificationMetricsRequests
@@ -40,18 +40,12 @@ class ClassificationMetricsController {
                 classificationMetricsCalculator.calculateMetrics(it.classification.toSet(), it.groundTruth.toSet(), it.confusionMatrixSum)
             }
 
-        val averages = classificationMetricsCalculator.calculateAverages(results, body.weights)
-
-        return AverageClassificationMetricsResponse(averages)
+        return classificationMetricsCalculator.calculateAverages(results, body.weights)
     }
 
     data class AverageClassificationMetricsRequest(
         val classificationMetricsRequests: List<ClassificationMetricsRequest>,
         val weights: List<Int>? = null
-    )
-
-    data class AverageClassificationMetricsResponse(
-        val classificationResults: List<AggregatedClassificationResult>
     )
 
     data class ClassificationMetricsRequest(
