@@ -167,9 +167,16 @@ class ResultSerializationTest {
         assertAll(
             Executable { assertTrue(tree.isObject) { "the aggregation must serialize as an object, not an array" } },
             Executable {
-                assertEquals(
-                    listOf("singleResults", "weights", "macroAverage", "weightedAverage", "microAverage", "confusionMatrix", "betas"),
-                    tree.fieldNames().asSequence().toList()
+                // The creator properties keep their declaration order; the derived ones (confusionMatrix, betas) may appear in any order.
+                val fields = tree.fieldNames().asSequence().toList()
+                assertAll(
+                    Executable {
+                        assertEquals(
+                            listOf("singleResults", "weights", "macroAverage", "weightedAverage", "microAverage"),
+                            fields.take(5)
+                        )
+                    },
+                    Executable { assertEquals(setOf("confusionMatrix", "betas"), fields.drop(5).toSet()) }
                 )
             },
             Executable { assertEquals(listOf(2, 3), tree.get("weights").map { it.intValue() }) },

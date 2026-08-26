@@ -1,4 +1,4 @@
-The project can be integrated into your own system as a library to calculate both classification and rank metrics. Follow the steps below to use the metrics calculator within your code.
+The project can be integrated into your own system as a library to calculate classification metrics. Follow the steps below to use the metrics calculator within your code.
 
 ## 1. Adding the Dependency
 
@@ -16,13 +16,13 @@ Make sure to replace `${revision}` with the appropriate version number of the li
 
 ### Optional: Snapshot Repository
 
-If you are using a snapshot version of the library (like `0.1.1-SNAPSHOT`), you will need to include the **snapshot repository** configuration in your `pom.xml` file. This enables Maven to fetch the latest snapshot build:
+If you are using a snapshot version of the library (like `0.3.0-SNAPSHOT`), you will need to include the **snapshot repository** configuration in your `pom.xml` file. This enables Maven to fetch the latest snapshot build:
 
 ```xml
 <repositories>
     <repository>
         <id>mavenSnapshot</id>
-        <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+        <url>https://central.sonatype.com/repository/maven-snapshots/</url>
         <snapshots>
             <enabled>true</enabled>
         </snapshots>
@@ -32,9 +32,7 @@ If you are using a snapshot version of the library (like `0.1.1-SNAPSHOT`), you 
 
 ## 2. Importing the Metrics Calculator
 
-Once the library is included, you can import and use the **ClassificationMetricsCalculator** and **RankMetricsCalculator** in your project.
-
-### Example for Classification Metrics:
+Once the library is included, you can import and use the **ClassificationMetricsCalculator** in your project.
 
 <details>
 <summary>Kotlin example</summary>
@@ -89,31 +87,85 @@ public class ClassificationExample {
 ```
 </details>
 
-### Example for Rank Metrics:
+## 3. F-beta Scores
+
+Every `calculateMetrics` overload has a variant that takes the betas of the [F-beta scores](Classification-Metrics) to calculate. The F1-score is always included, duplicates are dropped and the scores are keyed by beta in ascending order. Betas have to be finite and greater than 0.
 
 <details>
 <summary>Kotlin example</summary>
 
 ```kotlin
-import edu.kit.kastel.mcse.ardoco.metrics.RankMetricsCalculator
-import edu.kit.kastel.mcse.ardoco.metrics.result.SingleRankMetricsResult
+val result = calculator.calculateMetrics(classification, groundTruth, 20, listOf(0.5, 2.0))
+
+result.f1                    // always available
+result.fbetaScores           // {0.5=..., 1.0=..., 2.0=...}
+result.fbeta(3.0)            // not requested, but recalculated exactly from precision and recall
+result.fbetaOrNull(3.0)      // null, because it was not requested
+result.confusionMatrix       // the counts the metrics were derived from
+```
+
+</details>
+<details open>
+<summary>Java example</summary>
+
+```java
+SingleClassificationResult<String> result =
+        calculator.calculateMetrics(classification, groundTruth, 20, List.of(0.5, 2.0));
+
+result.getF1();                 // always available
+result.getFbetaScores();        // {0.5=..., 1.0=..., 2.0=...}
+result.fbeta(3.0);              // not requested, but recalculated exactly from precision and recall
+result.fbetaOrNull(3.0);        // null, because it was not requested
+result.getConfusionMatrix();    // the counts the metrics were derived from
+```
+</details>
+
+## 4. Customizing the Calculations
+
+The calculator also accepts a **string provider**, which lets you specify how the elements of your classification are converted to strings before they are compared:
+
+```kotlin
+val result = calculator.calculateMetrics(
+    classification = myLinks,
+    groundTruth = myGoldStandard,
+    stringProvider = { it.id },
+    confusionMatrixSum = 20,
+    betas = listOf(2.0)
+)
+```
+
+## 5. Aggregation of Results
+
+`calculateAverages` aggregates multiple single results into one `ClassificationAggregationResult`, which exposes the macro, the weighted and the micro average by name. See [Aggregation of Metrics](Aggregation-of-Metrics) for the semantics.
+
+<details>
+<summary>Kotlin example</summary>
+
+```kotlin
+import edu.kit.kastel.mcse.ardoco.metrics.ClassificationMetricsCalculator
+import edu.kit.kastel.mcse.ardoco.metrics.result.AggregationType
+import edu.kit.kastel.mcse.ardoco.metrics.result.ClassificationMetric
 
 fun main() {
-    val rankedResults = listOf(
-        listOf("A", "B", "C"),  // Ranked results for query 1
-        listOf("B", "A", "D")   // Ranked results for query 2
-    )
-    val groundTruth = setOf("A", "B")
+    val calculator = ClassificationMetricsCalculator.Instance
 
-    // Use the RankMetricsCalculator to calculate metrics
-    val calculator = RankMetricsCalculator.Instance
-    val result: SingleRankMetricsResult = calculator.calculateMetrics(
-        rankedResults = rankedResults,
-        groundTruth = groundTruth,
-        relevanceBasedInput = null
-    )
+    val first = calculator.calculateMetrics(setOf("A", "B", "C", "D", "E"), setOf("A", "B"), 20, listOf(0.5, 2.0))
+    val second = calculator.calculateMetrics(setOf("F"), setOf("F", "G", "H"), 20, listOf(0.5, 2.0))
 
-    result.prettyPrint()  // Logs MAP, LAG, AUC, etc.
+    // weights = null uses the size of the gold standard of each result, betas = null uses the betas of the results
+    val aggregation = calculator.calculateAverages(listOf(first, second), null, null)
+
+    aggregation.macroAverage.f1                          // 0.5357142857142858
+    aggregation.weightedAverage.precision                // 0.76
+    aggregation.microAverage.fbetaScores.getValue(2.0)   // 0.5769230769230769
+
+    aggregation[AggregationType.MICRO_AVERAGE].recall    // by type, if only known at runtime
+    aggregation.confusionMatrix                          // pooled TP/FP/FN/TN over all results
+    aggregation.truePositives()                          // union of the true positives
+    aggregation.spread(ClassificationMetric.PRECISION)   // min, max, mean and standard deviation
+    aggregation.fbetaSpread(2.0)                         // the same for the F2 score
+
+    aggregation.prettyPrint()                            // logs all three aggregations
 }
 ```
 
@@ -122,160 +174,40 @@ fun main() {
 <summary>Java example</summary>
 
 ```java
-import edu.kit.kastel.mcse.ardoco.metrics.RankMetricsCalculator;
-import edu.kit.kastel.mcse.ardoco.metrics.result.SingleRankMetricsResult;
+import edu.kit.kastel.mcse.ardoco.metrics.ClassificationMetricsCalculator;
+import edu.kit.kastel.mcse.ardoco.metrics.result.AggregationType;
+import edu.kit.kastel.mcse.ardoco.metrics.result.ClassificationAggregationResult;
+import edu.kit.kastel.mcse.ardoco.metrics.result.ClassificationMetric;
+import edu.kit.kastel.mcse.ardoco.metrics.result.SingleClassificationResult;
 
 import java.util.List;
 import java.util.Set;
 
-public class RankMetricsExample {
+public class AggregationExample {
     public static void main(String[] args) {
-        List<List<String>> rankedResults = List.of(
-                List.of("A", "B", "C"),  // Ranked results for query 1
-                List.of("B", "A", "D")   // Ranked results for query 2
-        );
-        Set<String> groundTruth = Set.of("A", "B");
+        ClassificationMetricsCalculator calculator = ClassificationMetricsCalculator.getInstance();
 
-        // Use the RankMetricsCalculator to calculate metrics
-        RankMetricsCalculator calculator = RankMetricsCalculator.getInstance();
-        SingleRankMetricsResult result = calculator.calculateMetrics(
-                rankedResults,
-                groundTruth,
-                null  // Relevance-based input (optional)
-        );
+        SingleClassificationResult<String> first =
+                calculator.calculateMetrics(Set.of("A", "B", "C", "D", "E"), Set.of("A", "B"), 20, List.of(0.5, 2.0));
+        SingleClassificationResult<String> second =
+                calculator.calculateMetrics(Set.of("F"), Set.of("F", "G", "H"), 20, List.of(0.5, 2.0));
 
-        // Print the result, which includes MAP, LAG, AUC, etc.
-        result.prettyPrint();
+        // weights = null uses the size of the gold standard of each result, betas = null uses the betas of the results
+        ClassificationAggregationResult<String> aggregation =
+                calculator.calculateAverages(List.of(first, second), null, null);
+
+        aggregation.getMacroAverage().getF1();                          // 0.5357142857142858
+        aggregation.getWeightedAverage().getPrecision();                // 0.76
+        aggregation.getMicroAverage().getFbetaScores().get(2.0);        // 0.5769230769230769
+
+        aggregation.get(AggregationType.MICRO_AVERAGE).getRecall();     // by type, if only known at runtime
+        aggregation.getConfusionMatrix();                               // pooled TP/FP/FN/TN over all results
+        aggregation.truePositives();                                    // union of the true positives
+        aggregation.spread(ClassificationMetric.PRECISION);             // min, max, mean and standard deviation
+        aggregation.fbetaSpread(2.0);                                   // the same for the F2 score
+
+        aggregation.prettyPrint();                                      // logs all three aggregations
     }
 }
 ```
 </details>
-
-## 3. Customizing the Calculations
-
-Both calculators (classification and rank metrics) provide customizable inputs like:
-- **String Provider**: Allows you to specify how the elements in your classification or ranking are converted to strings.
-- **Relevance-Based Input (optional for rank metrics)**: Allows you to input additional relevance scores if needed for calculating metrics like AUC.
-
-### Example for Using `RelevanceBasedInput` with Rank Metrics
-
-The **`RelevanceBasedInput`** class allows you to pass additional relevance scores for ranked results when calculating rank metrics like **AUC**. This relevance-based information gives more context to the ranking system, allowing it to factor in how relevant each item is.
-
-#### Code Example:
-
-<details>
-<summary>Kotlin example</summary>
-    
-```kotlin
-import edu.kit.kastel.mcse.ardoco.metrics.RankMetricsCalculator
-import edu.kit.kastel.mcse.ardoco.metrics.result.SingleRankMetricsResult
-import edu.kit.kastel.mcse.ardoco.metrics.internal.RelevanceBasedInput
-
-fun main() {
-    // Example ranked results for two queries
-    val rankedResults = listOf(
-        listOf("A", "B", "C"),  // Ranked results for query 1
-        listOf("D", "A", "B")   // Ranked results for query 2
-    )
-
-    // Ground truth for relevance (the most relevant results)
-    val groundTruth = setOf("A", "B")
-
-    // Relevance scores associated with the ranked results
-    val rankedRelevances = listOf(
-        listOf(0.9, 0.8, 0.4),  // Relevance scores for query 1
-        listOf(0.7, 0.6, 0.5)   // Relevance scores for query 2
-    )
-
-    // Creating the RelevanceBasedInput object
-    val relevanceInput = RelevanceBasedInput(
-        rankedRelevances = rankedRelevances,   // Relevance scores for ranked results
-        doubleProvider = { it },               // Function to provide the relevance value (identity function in this case)
-        biggerIsMoreSimilar = true             // Whether higher values mean more relevance
-    )
-
-    // Use the RankMetricsCalculator to calculate metrics
-    val calculator = RankMetricsCalculator.Instance
-    val result: SingleRankMetricsResult = calculator.calculateMetrics(
-        rankedResults = rankedResults,
-        groundTruth = groundTruth,
-        relevanceBasedInput = relevanceInput
-    )
-
-    // Print the calculated rank metrics (MAP, LAG, AUC, etc.)
-    result.prettyPrint()
-}
-```
-
-</details>
-<details open>
-<summary>Java example</summary>
-
-```java
-import edu.kit.kastel.mcse.ardoco.metrics.RankMetricsCalculator;
-import edu.kit.kastel.mcse.ardoco.metrics.result.SingleRankMetricsResult;
-import edu.kit.kastel.mcse.ardoco.metrics.internal.RelevanceBasedInput;
-
-import java.util.List;
-import java.util.Set;
-
-public class RankMetricsWithRelevanceExample {
-    public static void main(String[] args) {
-        // Example ranked results for two queries
-        List<List<String>> rankedResults = List.of(
-            List.of("A", "B", "C"),  // Ranked results for query 1
-            List.of("D", "A", "B")   // Ranked results for query 2
-        );
-
-        // Ground truth for relevance (the most relevant results)
-        Set<String> groundTruth = Set.of("A", "B");
-
-        // Relevance scores associated with the ranked results
-        List<List<Double>> rankedRelevances = List.of(
-            List.of(0.9, 0.8, 0.4),  // Relevance scores for query 1
-            List.of(0.7, 0.6, 0.5)   // Relevance scores for query 2
-        );
-
-        // Creating the RelevanceBasedInput object
-        RelevanceBasedInput relevanceInput = new RelevanceBasedInput(
-            rankedRelevances,      // Relevance scores for ranked results
-            Double::valueOf,       // Function to provide the relevance value (identity function in this case)
-            true                   // Whether higher values mean more relevance
-        );
-
-        // Use the RankMetricsCalculator to calculate metrics
-        RankMetricsCalculator calculator = RankMetricsCalculator.getInstance();
-        SingleRankMetricsResult result = calculator.calculateMetrics(
-            rankedResults,
-            groundTruth,
-            relevanceInput  // Provide relevance-based input
-        );
-
-        // Print the calculated rank metrics (MAP, LAG, AUC, etc.)
-        result.prettyPrint();
-    }
-}
-```
-</details>
-
-
-#### Explanation:
-1. **Ranked Results**: A list of lists where each list represents ranked items for a query.
-   - Query 1: $ ["A", "B", "C"] $
-   - Query 2: $ ["D", "A", "B"] $
-
-2. **Ground Truth**: The correct (most relevant) items, which are $ ["A", "B"] $.
-
-3. **Relevance Scores**: The relevance values for the ranked results:
-   - Query 1: $ [0.9, 0.8, 0.4] $ – Higher scores indicate more relevant items.
-   - Query 2: $ [0.7, 0.6, 0.5] $.
-
-4. **Relevance-Based Input**: This structure provides the calculator with the relevance scores and indicates that higher values represent more relevance (i.e., `biggerIsMoreSimilar = true`).
-
-#### Customization:
-- You can modify the `doubleProvider` function to convert any complex structure (such as custom objects) into a numeric relevance score.
-- The `biggerIsMoreSimilar` flag can be set to `false` if lower values indicate more relevance (e.g., in a ranking where 1st place is more relevant than 10th place).
-
-## 4. Aggregation of Results
-
-To aggregate multiple classification or ranking results, you can utilize the respective aggregation methods provided by the library. For more details, refer to the [Aggregation](Aggregation-of-Metrics) section.
