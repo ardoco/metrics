@@ -1,195 +1,144 @@
 package edu.kit.kastel.mcse.ardoco.metrics.internal
 
 import edu.kit.kastel.mcse.ardoco.metrics.ClassificationMetricsCalculator
-import edu.kit.kastel.mcse.ardoco.metrics.calculation.calculateAccuracy
-import edu.kit.kastel.mcse.ardoco.metrics.calculation.calculateF1
-import edu.kit.kastel.mcse.ardoco.metrics.calculation.calculatePhiCoefficient
-import edu.kit.kastel.mcse.ardoco.metrics.calculation.calculatePhiCoefficientMax
-import edu.kit.kastel.mcse.ardoco.metrics.calculation.calculatePhiOverPhiMax
-import edu.kit.kastel.mcse.ardoco.metrics.calculation.calculatePrecision
-import edu.kit.kastel.mcse.ardoco.metrics.calculation.calculateRecall
-import edu.kit.kastel.mcse.ardoco.metrics.calculation.calculateSpecificity
 import edu.kit.kastel.mcse.ardoco.metrics.result.AggregatedClassificationResult
 import edu.kit.kastel.mcse.ardoco.metrics.result.AggregationType
+import edu.kit.kastel.mcse.ardoco.metrics.result.ClassificationAggregationResult
+import edu.kit.kastel.mcse.ardoco.metrics.result.ConfusionMatrix
 import edu.kit.kastel.mcse.ardoco.metrics.result.SingleClassificationResult
 
 internal class ClassificationMetricsCalculatorImpl : ClassificationMetricsCalculator {
     override fun <T> calculateMetrics(
         classification: Set<T>,
         groundTruth: Set<T>,
-        confusionMatrixSum: Int?
+        confusionMatrixSum: Int?,
+        betas: Collection<Double>
     ): SingleClassificationResult<T> {
         val tp = classification.intersect(groundTruth)
         val fp = classification.filter { !groundTruth.contains(it) }.toSet()
         val fn = groundTruth.filter { !classification.contains(it) }.toSet()
-        val tn = confusionMatrixSum?.let { sum -> sum - (tp.size + fp.size + fn.size) }
+        val tn =
+            confusionMatrixSum?.let { sum ->
+                val trueNegatives = sum - (tp.size + fp.size + fn.size)
+                require(trueNegatives >= 0) {
+                    "The confusion matrix sum ($sum) must be at least the number of classified and expected elements (${tp.size + fp.size + fn.size})"
+                }
+                trueNegatives
+            }
 
-        val intermediateMetrics = calculateMetrics(tp.size, fp.size, fn.size, tn)
+        val metrics = computeMetrics(ConfusionMatrix(tp.size, fp.size, fn.size, tn), normalizeBetas(betas))
         return SingleClassificationResult(
             tp,
             fp,
             fn,
             tn,
-            intermediateMetrics.precision,
-            intermediateMetrics.recall,
-            intermediateMetrics.f1,
-            intermediateMetrics.accuracy,
-            intermediateMetrics.specificity,
-            intermediateMetrics.phiCoefficient,
-            intermediateMetrics.phiCoefficientMax,
-            intermediateMetrics.phiOverPhiMax
+            metrics.precision,
+            metrics.recall,
+            metrics.f1,
+            metrics.fbetaScores,
+            metrics.accuracy,
+            metrics.specificity,
+            metrics.phiCoefficient,
+            metrics.phiCoefficientMax,
+            metrics.phiOverPhiMax
         )
     }
 
-    private fun calculateMetrics(
-        tp: Int,
-        fp: Int,
-        fn: Int,
-        tn: Int?
-    ): SingleClassificationResult<Nothing> {
-        val precision = calculatePrecision(tp, fp)
-        val recall = calculateRecall(tp, fn)
-        val f1 = calculateF1(precision, recall)
-
-        if (tn == null) {
-            return SingleClassificationResult(setOf(), setOf(), setOf(), null, precision, recall, f1, null, null, null, null, null)
-        }
-
-        val accuracy = calculateAccuracy(tp, fp, fn, tn)
-        val specificity = calculateSpecificity(tn, fp)
-        val phiCoefficient = calculatePhiCoefficient(tp, fp, fn, tn)
-        val phiCoefficientMax = calculatePhiCoefficientMax(tp, fp, fn, tn)
-        val phiOverPhiMax = calculatePhiOverPhiMax(tp, fp, fn, tn)
-
-        return SingleClassificationResult(
-            setOf(),
-            setOf(),
-            setOf(),
-            tn,
-            precision,
-            recall,
-            f1,
-            accuracy,
-            specificity,
-            phiCoefficient,
-            phiCoefficientMax,
-            phiOverPhiMax
-        )
-    }
-
-    override fun calculateAverages(
-        singleClassificationResults: List<SingleClassificationResult<*>>,
-        weights: List<Int>?
-    ): List<AggregatedClassificationResult> {
-        val macroAverage = calculateMacroAverage(singleClassificationResults)
+    override fun <T> calculateAverages(
+        singleClassificationResults: List<SingleClassificationResult<out T>>,
+        weights: List<Int>?,
+        betas: Collection<Double>?
+    ): ClassificationAggregationResult<T> {
+        validate(singleClassificationResults, weights)
 
         val weightsForAverage = weights ?: singleClassificationResults.map { it.truePositives.size + it.falseNegatives.size }
-        val weightedAverage = calculateWeightedAverage(singleClassificationResults, weightsForAverage, AggregationType.WEIGHTED_AVERAGE)
+        require(weightsForAverage.all { it >= 0 }) { "Weights must not be negative but were $weightsForAverage" }
+        require(weightsForAverage.sum() > 0) {
+            if (weights == null) {
+                "At least one result must have a non-empty ground truth, otherwise all default weights are 0. Provide explicit weights instead."
+            } else {
+                "At least one weight must be greater than 0 but all weights were 0"
+            }
+        }
+        val betasForAverage = normalizeBetas(betas ?: singleClassificationResults.flatMap { it.fbetaScores.keys })
+        val pooledConfusionMatrix = singleClassificationResults.map { it.confusionMatrix }.reduce(ConfusionMatrix::plus)
 
-        val microAverage = calculateMicroAverage(singleClassificationResults)
+        val macroAverage =
+            weightedAverage(
+                singleClassificationResults,
+                singleClassificationResults.map { 1 },
+                betasForAverage,
+                pooledConfusionMatrix,
+                AggregationType.MACRO_AVERAGE
+            )
+        val weightedAverage =
+            weightedAverage(
+                singleClassificationResults,
+                weightsForAverage,
+                betasForAverage,
+                pooledConfusionMatrix,
+                AggregationType.WEIGHTED_AVERAGE
+            )
+        val microAverage =
+            computeMetrics(pooledConfusionMatrix, betasForAverage).toAggregatedResult(AggregationType.MICRO_AVERAGE, pooledConfusionMatrix)
 
-        return listOf(macroAverage, weightedAverage, microAverage)
+        return ClassificationAggregationResult(
+            singleClassificationResults,
+            weightsForAverage,
+            macroAverage,
+            weightedAverage,
+            microAverage
+        )
     }
 
-    private fun calculateMicroAverage(singleClassificationResults: List<SingleClassificationResult<*>>): AggregatedClassificationResult {
+    private fun validate(
+        singleClassificationResults: List<SingleClassificationResult<*>>,
+        weights: List<Int>?
+    ) {
         require(singleClassificationResults.isNotEmpty()) { "classificationResults must not be empty" }
-
         require(
             singleClassificationResults.all {
                 (singleClassificationResults[0].trueNegatives == null) == (it.trueNegatives == null)
             }
         ) { "All classificationResults must have either all or no tn" }
-
-        var tp = 0
-        var fp = 0
-        var fn = 0
-        var tn: Int? = if (singleClassificationResults[0].trueNegatives != null) 0 else null
-
-        for (classificationResult in singleClassificationResults) {
-            tp += classificationResult.truePositives.size
-            fp += classificationResult.falsePositives.size
-            fn += classificationResult.falseNegatives.size
-            if (tn != null) {
-                tn += classificationResult.trueNegatives!!
-            }
+        require(weights == null || weights.size == singleClassificationResults.size) {
+            "There must be exactly one weight per result but there were ${weights?.size} weights for ${singleClassificationResults.size} results"
         }
-
-        val result = calculateMetrics(tp, fp, fn, tn)
-        return AggregatedClassificationResult(result, AggregationType.MICRO_AVERAGE, singleClassificationResults, null)
     }
 
-    private fun calculateMacroAverage(singleClassificationResults: List<SingleClassificationResult<*>>): AggregatedClassificationResult {
-        return calculateWeightedAverage(singleClassificationResults, singleClassificationResults.map { 1 }, AggregationType.MACRO_AVERAGE)
-    }
-
-    private fun calculateWeightedAverage(
+    private fun weightedAverage(
         singleClassificationResults: List<SingleClassificationResult<*>>,
         weights: List<Int>,
+        betas: List<Double>,
+        confusionMatrix: ConfusionMatrix,
         type: AggregationType
     ): AggregatedClassificationResult {
-        require(singleClassificationResults.isNotEmpty()) { "classificationResults must not be empty" }
+        val hasTrueNegatives = singleClassificationResults[0].trueNegatives != null
 
-        require(
-            singleClassificationResults.all {
-                (singleClassificationResults[0].trueNegatives == null) == (it.trueNegatives == null)
-            }
-        ) { "All classificationResults must have either all or no tn" }
+        val values =
+            ClassificationMetricValues(
+                weightedMean(singleClassificationResults.map { it.precision }, weights),
+                weightedMean(singleClassificationResults.map { it.recall }, weights),
+                betas.associateWith { beta -> weightedMean(singleClassificationResults.map { it.fbeta(beta) }, weights) },
+                if (hasTrueNegatives) weightedMean(singleClassificationResults.map { it.accuracy!! }, weights) else null,
+                if (hasTrueNegatives) weightedMean(singleClassificationResults.map { it.specificity!! }, weights) else null,
+                if (hasTrueNegatives) weightedMean(singleClassificationResults.map { it.phiCoefficient!! }, weights) else null,
+                if (hasTrueNegatives) weightedMean(singleClassificationResults.map { it.phiCoefficientMax!! }, weights) else null,
+                if (hasTrueNegatives) weightedMean(singleClassificationResults.map { it.phiOverPhiMax!! }, weights) else null
+            )
+        return values.toAggregatedResult(type, confusionMatrix)
+    }
 
-        var precision = 0.0
-        var recall = 0.0
-        var f1 = 0.0
-        var accuracy = 0.0
-        var specificity = 0.0
-        var phiCoefficient = 0.0
-        var phiCoefficientMax = 0.0
-        var phiOverPhiMax = 0.0
-
+    private fun weightedMean(
+        values: List<Double>,
+        weights: List<Int>
+    ): Double {
+        var weightedSum = 0.0
         var sumOfWeights = 0.0
-
-        for ((i, classificationResult) in singleClassificationResults.withIndex()) {
-            precision += classificationResult.precision * weights[i]
-            recall += classificationResult.recall * weights[i]
-            f1 += classificationResult.f1 * weights[i]
-            accuracy += (classificationResult.accuracy ?: 0.0) * weights[i]
-            specificity += (classificationResult.specificity ?: 0.0) * weights[i]
-            phiCoefficient += (classificationResult.phiCoefficient ?: 0.0) * weights[i]
-            phiCoefficientMax += (classificationResult.phiCoefficientMax ?: 0.0) * weights[i]
-            phiOverPhiMax += (classificationResult.phiOverPhiMax ?: 0.0) * weights[i]
-
-            sumOfWeights += weights[i]
+        for ((index, value) in values.withIndex()) {
+            weightedSum += value * weights[index]
+            sumOfWeights += weights[index]
         }
-
-        precision /= sumOfWeights
-        recall /= sumOfWeights
-        f1 /= sumOfWeights
-        accuracy /= sumOfWeights
-        specificity /= sumOfWeights
-        phiCoefficient /= sumOfWeights
-        phiCoefficientMax /= sumOfWeights
-        phiOverPhiMax /= sumOfWeights
-
-        return if (singleClassificationResults[0].trueNegatives == null) {
-            AggregatedClassificationResult(
-                type,
-                precision,
-                recall,
-                f1,
-                null, null, null, null, null,
-                singleClassificationResults, weights
-            )
-        } else {
-            AggregatedClassificationResult(
-                type,
-                precision,
-                recall,
-                f1,
-                accuracy,
-                specificity,
-                phiCoefficient,
-                phiCoefficientMax,
-                phiOverPhiMax,
-                singleClassificationResults, weights
-            )
-        }
+        return weightedSum / sumOfWeights
     }
 }

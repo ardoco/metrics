@@ -1,4 +1,4 @@
-The metrics calculator provides a REST API that allows users to calculate classification and rank metrics by sending requests with their data. The API is built using Spring Boot and offers endpoints for both **classification** and **rank** metrics, as well as aggregation features.
+The metrics calculator provides a REST API that allows users to calculate classification metrics by sending requests with their data. The API is built using Spring Boot and offers endpoints for calculating metrics for a single project as well as aggregating results across projects.
 
 ## Base URL
 
@@ -26,7 +26,7 @@ Through Swagger, you can:
 
 ### 1. Classification Metrics
 
-You can calculate classification metrics by sending data to the classification API. 
+You can calculate classification metrics by sending data to the classification API.
 
 **Endpoint:**
 ```
@@ -37,38 +37,42 @@ POST /classification-metrics
 
 ```json
 {
-  "classification": [
-    "string"
-  ],
-  "groundTruth": [
-    "string"
-  ],
-  "confusionMatrixSum": 0
+  "classification": ["A", "B", "C", "D", "E"],
+  "groundTruth": ["A", "B"],
+  "confusionMatrixSum": 20,
+  "betas": [0.5, 2.0]
 }
 ```
+
+`confusionMatrixSum` and `betas` are optional. Without a confusion matrix sum the metrics that need true negatives are `null`. Without `betas` only the F1-score is calculated; beta 1.0 is always included and every beta has to be finite and greater than 0.
 
 **Response Example:**
 
 ```json
 {
-  "truePositives": [
-    "string"
-  ],
-  "falsePositives": [
-    "string"
-  ],
-  "falseNegatives": [
-    "string"
-  ],
-  "trueNegatives": 0,
-  "precision": 0,
-  "recall": 0,
-  "f1": 0,
-  "accuracy": 0,
-  "specificity": 0,
-  "phiCoefficient": 0,
-  "phiCoefficientMax": 0,
-  "phiOverPhiMax": 0
+  "truePositives": ["A", "B"],
+  "falsePositives": ["C", "D", "E"],
+  "falseNegatives": [],
+  "trueNegatives": 15,
+  "precision": 0.4,
+  "recall": 1.0,
+  "f1": 0.5714285714285715,
+  "fbetaScores": {
+    "0.5": 0.45454545454545453,
+    "1.0": 0.5714285714285715,
+    "2.0": 0.7692307692307692
+  },
+  "accuracy": 0.85,
+  "specificity": 0.8333333333333334,
+  "phiCoefficient": 0.5773502691896257,
+  "phiCoefficientMax": 0.5773502691896257,
+  "phiOverPhiMax": 1.0,
+  "confusionMatrix": {
+    "truePositives": 2,
+    "falsePositives": 3,
+    "falseNegatives": 0,
+    "trueNegatives": 15
+  }
 }
 ```
 
@@ -85,158 +89,98 @@ POST /classification-metrics/average
 
 ```json
 {
-  "classificationRequests": [
+  "classificationMetricsRequests": [
     {
-      "classification": ["A", "B"],
-      "groundTruth": ["A", "C"]
-    },
-    {
-      "classification": ["B", "C"],
-      "groundTruth": ["C", "D"]
-    }
-  ],
-  "weights": [2, 1]
-}
-```
-
-**Response Example:**
-
-```json
-{
-  "classificationResults": [
-    {
-      "type": "MACRO_AVERAGE",
-      "precision": 0,
-      "recall": 0,
-      "f1": 0,
-      "accuracy": 0,
-      "specificity": 0,
-      "phiCoefficient": 0,
-      "phiCoefficientMax": 0,
-      "phiOverPhiMax": 0,
-      "originalSingleClassificationResults": [
-        {
-          "truePositives": [
-            "string"
-          ],
-          "falsePositives": [
-            "string"
-          ],
-          "falseNegatives": [
-            "string"
-          ],
-          "trueNegatives": 0,
-          "precision": 0,
-          "recall": 0,
-          "f1": 0,
-          "accuracy": 0,
-          "specificity": 0,
-          "phiCoefficient": 0,
-          "phiCoefficientMax": 0,
-          "phiOverPhiMax": 0
-        }
-      ],
-      "weights": [
-        2, 1
-      ]
-    }
-  ]
-}
-```
-
-### 2. Rank Metrics
-
-To calculate rank metrics, send your ranked results and ground truth to the rank metrics API.
-
-**Endpoint:**
-```
-POST /rank-metrics
-```
-
-**Request Body Example:**
-
-```json
-{
-  "rankedResults": [
-    ["A", "B", "C"],
-    ["B", "A", "D"]
-  ],
-  "groundTruth": ["A", "B"],
-  "rankedRelevances": [[0.9, 0.8, 0.4], [0.7, 0.6, 0.5]],
-  "biggerIsMoreSimilar": true
-}
-```
-
-**Response Example:**
-
-```json
-{
-  "map": 0.85,
-  "lag": 13,
-  "auc": 0.92,
-  "groundTruthSize": 2
-}
-```
-
-#### Aggregation of Rank Metrics
-
-You can also aggregate multiple rank metrics using the following endpoint:
-
-**Endpoint:**
-```
-POST /rank-metrics/average
-```
-
-**Request Body Example:**
-
-```json
-{
-  "rankMetricsRequests": [
-    {
-      "rankedResults": [["A", "B", "C"], ["B", "A", "D"]],
+      "classification": ["A", "B", "C", "D", "E"],
       "groundTruth": ["A", "B"],
-      "rankedRelevances": [[0.9, 0.8, 0.4], [0.7, 0.6, 0.5]],
-      "biggerIsMoreSimilar": true
+      "confusionMatrixSum": 20
     },
     {
-      "rankedResults": [["D", "E", "F"], ["B", "A", "D"]],
-      "groundTruth": ["D", "E"],
-      "rankedRelevances": [[0.4, 0.8, 0.9], [0.5, 0.6, 0.7]],
-      "biggerIsMoreSimilar": false
+      "classification": ["F"],
+      "groundTruth": ["F", "G", "H"],
+      "confusionMatrixSum": 20
     }
   ],
-  "weights": [2, 1]
+  "weights": [2, 3],
+  "betas": [0.5, 2.0]
 }
 ```
+
+`weights` and `betas` are optional. Without weights the size of the gold standard of each request is used; there has to be exactly one weight per request. The betas apply to all requests and therefore have to be given on the **request level** &ndash; a `betas` field inside a single `classificationMetricsRequests` entry is rejected rather than silently ignored.
 
 **Response Example:**
 
+The response is the aggregation itself, so the three averages are reachable by name instead of having to be filtered out of an array. `singleResults` holds the full input results and is abbreviated here.
+
 ```json
 {
-  "rankResults": [
-    {
-      "type": "WEIGHTED_AVERAGE",
-      "map": 0.8,
-      "lag": 12,
-      "auc": 0.48,
-      "originalRankResults": [
-        {
-          "map": 0.85,
-          "lag": 13,
-          "auc": 0.92,
-          "groundTruthSize": 2
-        },
-        {
-          "map": 0.55,
-          "lag": 25,
-          "auc": 0.52,
-          "groundTruthSize": 2
-        }
-      ],
-      "weights": [
-        2, 1
-      ]
+  "singleResults": ["..."],
+  "weights": [2, 3],
+  "macroAverage": {
+    "type": "MACRO_AVERAGE",
+    "confusionMatrix": {
+      "truePositives": 3,
+      "falsePositives": 3,
+      "falseNegatives": 2,
+      "trueNegatives": 32
+    },
+    "precision": 0.7,
+    "recall": 0.6666666666666666,
+    "f1": 0.5357142857142858,
+    "fbetaScores": {
+      "0.5": 0.5844155844155844,
+      "1.0": 0.5357142857142858,
+      "2.0": 0.5769230769230769
+    },
+    "accuracy": 0.875,
+    "specificity": 0.9166666666666667,
+    "phiCoefficient": 0.5617344752311879,
+    "phiCoefficientMax": 0.5617344752311879,
+    "phiOverPhiMax": 1.0
+  },
+  "weightedAverage": {
+    "type": "WEIGHTED_AVERAGE",
+    "precision": 0.76,
+    "recall": 0.6,
+    "f1": 0.5285714285714287,
+    "fbetaScores": {
+      "0.5": 0.6103896103896104,
+      "1.0": 0.5285714285714287,
+      "2.0": 0.5384615384615384
     }
-  ]
+  },
+  "microAverage": {
+    "type": "MICRO_AVERAGE",
+    "precision": 0.5,
+    "recall": 0.6,
+    "f1": 0.5454545454545454,
+    "fbetaScores": {
+      "0.5": 0.5172413793103449,
+      "1.0": 0.5454545454545454,
+      "2.0": 0.5769230769230769
+    }
+  },
+  "confusionMatrix": {
+    "truePositives": 3,
+    "falsePositives": 3,
+    "falseNegatives": 2,
+    "trueNegatives": 32
+  },
+  "betas": [0.5, 1.0, 2.0]
 }
 ```
+
+See [Aggregation of Metrics](Aggregation-of-Metrics) for what the three averages mean and how F-beta scores are aggregated.
+
+### 2. Error Responses
+
+Invalid input is answered with **400 Bad Request** and the reason as the body, for example:
+
+- a beta that is not a finite number greater than 0,
+- a `weights` array whose length does not match the number of requests,
+- a `confusionMatrixSum` smaller than the number of classified and expected elements,
+- a mix of requests with and without a `confusionMatrixSum` on the `/average` endpoint,
+- `betas` given inside a single request on the `/average` endpoint,
+- a malformed request body, or a body missing a required property.
+
+Requests that do not reach an endpoint keep their usual status: **404 Not Found** for an unknown path and **405 Method Not Allowed** for an unsupported method. Only genuinely unexpected failures are reported as **500 Internal Server Error**.
