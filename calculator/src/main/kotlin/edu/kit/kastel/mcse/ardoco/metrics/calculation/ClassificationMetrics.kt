@@ -47,7 +47,7 @@ fun calculateF1(
  * @param precision the precision
  * @param recall    the recall
  * @param beta      the weight of the recall relative to the precision; must be finite and greater than 0
- * @return the F-beta score; 0.0 iff beta&#178;*precision+recall=0
+ * @return the F-beta score; 0.0 if precision or recall is 0
  * @throws IllegalArgumentException if [beta] is not a finite number greater than 0
  * @see [Wikipedia: F-score](https://en.wikipedia.org/wiki/F-score)
  */
