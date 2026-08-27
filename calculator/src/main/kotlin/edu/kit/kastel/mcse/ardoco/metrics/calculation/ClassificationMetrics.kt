@@ -74,7 +74,7 @@ fun calculateFBeta(
  * Calculates the accuracy based on the true positives, false positives, false negatives, and true negatives. If all four counts are 0, then returns
  * 1.0 because nothing was classified wrongly, which matches the sentinel of [calculatePrecision], [calculateRecall] and [calculateSpecificity].
  *
- * @return the accuracy; 1.0 iff TP+FP+FN+TN=0
+ * @return the accuracy; returns 1.0 for an empty confusion matrix
  * @see [Wikipedia: Accuracy and Precision](https://en.wikipedia.org/wiki/Accuracy_and_precision)
  */
 fun calculateAccuracy(
