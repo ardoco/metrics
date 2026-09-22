@@ -14,9 +14,7 @@ import java.math.MathContext
 fun calculatePrecision(
     truePositives: Int,
     falsePositives: Int
-): Double {
-    return if (truePositives + falsePositives == 0) 1.0 else truePositives.toDouble() / (truePositives + falsePositives)
-}
+): Double = if (truePositives + falsePositives == 0) 1.0 else truePositives.toDouble() / (truePositives + falsePositives)
 
 /**
  * Calculates the recall for the given True Positives (TPs) and False Negatives (FNs). If TP+NP=0, then returns 1.0 because there was no missing element.
@@ -28,9 +26,7 @@ fun calculatePrecision(
 fun calculateRecall(
     truePositives: Int,
     falseNegatives: Int
-): Double {
-    return if (truePositives + falseNegatives == 0) 1.0 else truePositives.toDouble() / (truePositives + falseNegatives)
-}
+): Double = if (truePositives + falseNegatives == 0) 1.0 else truePositives.toDouble() / (truePositives + falseNegatives)
 
 /**
  * Calculates the F1-score using the provided precision and recall. If precision+recall=0, returns 0.0.
@@ -42,15 +38,43 @@ fun calculateRecall(
 fun calculateF1(
     precision: Double,
     recall: Double
+): Double = calculateFBeta(precision, recall, 1.0)
+
+/**
+ * Calculates the F-beta score using the provided precision and recall. Beta is the weight of the recall relative to the precision: beta &lt; 1 weighs
+ * precision higher, beta &gt; 1 weighs recall higher, and beta = 1 yields the F1-score. If the denominator is 0, returns 0.0.
+ *
+ * @param precision the precision
+ * @param recall    the recall
+ * @param beta      the weight of the recall relative to the precision; must be finite and greater than 0
+ * @return the F-beta score; 0.0 if precision or recall is 0
+ * @throws IllegalArgumentException if [beta] is not a finite number greater than 0
+ * @see [Wikipedia: F-score](https://en.wikipedia.org/wiki/F-score)
+ */
+fun calculateFBeta(
+    precision: Double,
+    recall: Double,
+    beta: Double
 ): Double {
-    val f1 = 2 * (precision * recall) / (precision + recall)
-    return if (f1.isNaN()) 0.0 else f1
+    require(beta > 0.0 && beta.isFinite()) { "Beta must be a finite number greater than 0 but was $beta" }
+    // Squaring the beta would overflow to infinity for very large betas and turn the whole expression into NaN, so for beta > 1 the equivalent form
+    // scaled by 1/beta^2 is used instead. Both factors stay within [0, 1], which keeps the result correct over the entire finite beta domain.
+    val fBeta =
+        if (beta <= 1.0) {
+            val betaSquared = beta * beta
+            (1 + betaSquared) * (precision * recall) / ((betaSquared * precision) + recall)
+        } else {
+            val inverseBetaSquared = 1.0 / (beta * beta)
+            (inverseBetaSquared + 1) * (precision * recall) / (precision + (inverseBetaSquared * recall))
+        }
+    return if (fBeta.isNaN()) 0.0 else fBeta
 }
 
 /**
- * Calculates the accuracy based on the true positives, false positives, false negatives, and true negatives.
+ * Calculates the accuracy based on the true positives, false positives, false negatives, and true negatives. If all four counts are 0, then returns
+ * 1.0 because nothing was classified wrongly, which matches the sentinel of [calculatePrecision], [calculateRecall] and [calculateSpecificity].
  *
- * @return the accuracy
+ * @return the accuracy; returns 1.0 for an empty confusion matrix
  * @see [Wikipedia: Accuracy and Precision](https://en.wikipedia.org/wiki/Accuracy_and_precision)
  */
 fun calculateAccuracy(
@@ -61,6 +85,9 @@ fun calculateAccuracy(
 ): Double {
     val numerator = (truePositives + trueNegatives).toDouble()
     val denominator = (truePositives + falsePositives + falseNegatives + trueNegatives).toDouble()
+    // Without this guard an empty confusion matrix yields NaN, which is the only way a metric of this library can become non-finite. Jackson then
+    // writes it as the JSON string "NaN", breaking the `number` type that the REST schema declares for accuracy.
+    if (denominator == 0.0) return 1.0
     return numerator / denominator
 }
 
@@ -159,11 +186,17 @@ fun calculatePhiCoefficientMax(
 /**
  * Calculates the normalized phi correlation coefficient value that is phi divided by its maximum possible value.
  *
+ * Only meaningful for a non-negative phi, where the result lies in [0, 1]. [calculatePhiCoefficientMax] is the largest *positive* phi the marginals
+ * allow, so it does not bound a negatively correlated classification: that one is limited by the most negative attainable phi, which generally has a
+ * different magnitude. For a negative phi the result may therefore be smaller than -1 without any bound &ndash; for example -2.0 for
+ * `(tp, fp, fn, tn) = (0, 1, 2, 0)`. Callers reporting this metric for classifications that can perform worse than chance should treat a value
+ * outside [-1, 1] as "strongly negatively correlated" rather than as a normalized score.
+ *
  * @param truePositives  number of true positives
  * @param falsePositives number of false positives
  * @param falseNegatives number of false negatives
  * @param trueNegatives  number of true negatives
- * @return The value of Phi/PhiMax
+ * @return The value of Phi/PhiMax; within [0, 1] iff phi is non-negative
  * @see [Paper about Phi/PhiMax](https://journals.sagepub.com/doi/abs/10.1177/001316449105100403)
  */
 fun calculatePhiOverPhiMax(

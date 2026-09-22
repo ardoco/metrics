@@ -1,7 +1,7 @@
-# ArDoCo: Metrics Calculator
-Welcome to the **ArDoCo Metrics Calculator** project! This tool provides functionality to calculate and aggregate **classification** and **rank metrics** for various machine learning and ranking tasks.
+# ARDoCo: Metrics Calculator
+Welcome to the **ARDoCo Metrics Calculator** project! This tool provides functionality to calculate and aggregate **classification metrics** for various machine learning tasks.
 
-The [Wiki](https://github.com/ArDoCo/Metrics/wiki) contains all the necessary information to use the **ArDoCo Metrics Calculator** via multiple interfaces, including a library, REST API, and command-line interface (CLI).
+The [Wiki](https://github.com/ardoco/metrics/wiki) contains all the necessary information to use the **ARDoCo Metrics Calculator** via multiple interfaces, including a library, REST API, and command-line interface (CLI).
 
 ## Quickstart
 
@@ -9,9 +9,9 @@ To use this project as a Maven dependency, you need to include the following dep
 
 ```xml
 <dependency>
-    <groupId>io.github.ardoco</groupId>
-    <artifactId>metrics</artifactId>
-    <version>${revision}</version>
+	<groupId>io.github.ardoco</groupId>
+	<artifactId>metrics</artifactId>
+	<version>${revision}</version>
 </dependency>
 ```
 
