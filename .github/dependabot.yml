@@ -18,3 +18,13 @@ updates:
         commit-message:
             prefix: "Dependency"
             include: "scope"
+        # ARDoCo only uses Java LTS versions (25, next 29): no non-LTS JDK images
+        ignore:
+            - dependency-name: "eclipse-temurin"
+              versions: [">= 26, < 29"]
+            - dependency-name: "eclipse-temurin"
+              update-types: ["version-update:semver-major"]
+            - dependency-name: "maven"
+              versions: [">= 26, < 29"]
+            - dependency-name: "maven"
+              update-types: ["version-update:semver-major"]
