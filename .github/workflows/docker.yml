@@ -2,6 +2,9 @@ name: Docker Push
 
 on:
     workflow_dispatch:
+    # Monthly rebuild: images use the floating eclipse-temurin:25 tag and pick up JDK patches only when rebuilt
+    schedule:
+        - cron: "37 4 25 * *"
     push:
         # Publish `main` as Docker `latest` image.
         branches:
